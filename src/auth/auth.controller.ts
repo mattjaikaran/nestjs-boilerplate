@@ -11,12 +11,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthenticationResponseJSON, RegistrationResponseJSON } from '@simplewebauthn/types';
 import type { FastifyRequest } from 'fastify';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import {
+  AuthTokensResponseDto,
+  ErrorResponseDto,
+  UserResponseDto,
+} from '../common/dto/swagger.dto';
 import type { User } from '../database/schema';
 import { AuthService } from './auth.service';
 import type { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -42,6 +47,9 @@ export class AuthController {
   @Post('register')
   @Throttle({ short: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: 'Register with email/password' })
+  @ApiResponse({ status: 201, description: 'User created', type: AuthTokensResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation failed', type: ErrorResponseDto })
+  @ApiResponse({ status: 409, description: 'Email already exists', type: ErrorResponseDto })
   async register(@Body() dto: RegisterDto, @Req() req: FastifyRequest) {
     return this.authService.register(dto, {
       ipAddress: req.ip,
@@ -55,6 +63,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ short: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: 'Login with email/password' })
+  @ApiResponse({ status: 200, description: 'Login successful', type: AuthTokensResponseDto })
+  @ApiResponse({ status: 401, description: 'Invalid credentials', type: ErrorResponseDto })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded', type: ErrorResponseDto })
   async login(@Req() req: FastifyRequest, @CurrentUser() user: User) {
     return this.authService.login(user, {
       ipAddress: req.ip,
@@ -66,6 +77,12 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({ status: 200, description: 'New token pair issued', type: AuthTokensResponseDto })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid or expired refresh token',
+    type: ErrorResponseDto,
+  })
   async refresh(@Body('refreshToken') refreshToken: string, @Req() req: FastifyRequest) {
     return this.authService.refreshTokens(refreshToken, {
       ipAddress: req.ip,
@@ -84,6 +101,8 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user' })
+  @ApiResponse({ status: 200, description: 'Current user profile', type: UserResponseDto })
+  @ApiResponse({ status: 401, description: 'Not authenticated', type: ErrorResponseDto })
   me(@CurrentUser() user: User) {
     return user;
   }
