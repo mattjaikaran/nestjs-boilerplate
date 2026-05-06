@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { EmailModule } from '../email/email.module';
 import { UsersModule } from '../users/users.module';
+import { ApiKeyService } from './api-key.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
@@ -33,6 +34,7 @@ import { WebAuthnService } from './webauthn.service';
   controllers: [AuthController],
   providers: [
     AuthService,
+    ApiKeyService,
     TokenService,
     OtpService,
     TotpService,
@@ -43,6 +45,6 @@ import { WebAuthnService } from './webauthn.service';
     GoogleStrategy,
     GitHubStrategy,
   ],
-  exports: [AuthService, TokenService],
+  exports: [AuthService, ApiKeyService, TokenService],
 })
 export class AuthModule {}
