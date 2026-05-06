@@ -7,6 +7,9 @@ import type { UsersService } from '../users/users.service';
 import type { RegisterDto } from './dto/register.dto';
 import type { OtpService, OtpType } from './otp.service';
 import type { TokenService } from './token.service';
+import type { TotpService } from './totp.service';
+
+export type LoginResult = AuthTokens | { requiresTOTP: true; userId: string };
 
 export interface OAuthUserData {
   provider: string;
@@ -29,6 +32,7 @@ export class AuthService {
     private usersService: UsersService,
     private tokenService: TokenService,
     private otpService: OtpService,
+    private totpService: TotpService,
     @Inject(DRIZZLE) private db: DrizzleDB,
   ) {}
 
@@ -60,8 +64,28 @@ export class AuthService {
     return valid ? user : null;
   }
 
-  async login(user: User, meta?: { ipAddress?: string; userAgent?: string }): Promise<AuthTokens> {
+  async login(user: User, meta?: { ipAddress?: string; userAgent?: string }): Promise<LoginResult> {
     if (!user.isActive) throw new UnauthorizedException('Account disabled');
+
+    if (user.isTotpEnabled) {
+      return { requiresTOTP: true, userId: user.id };
+    }
+
+    await this.usersService.updateLastLogin(user.id);
+    return this.tokenService.generateTokens(user, meta);
+  }
+
+  async loginWithTotp(
+    userId: string,
+    totpToken: string,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ): Promise<AuthTokens> {
+    const user = await this.usersService.findById(userId);
+    if (!user || !user.isActive) throw new UnauthorizedException();
+
+    const valid = this.totpService.verify(user, totpToken);
+    if (!valid) throw new UnauthorizedException('Invalid TOTP token');
+
     await this.usersService.updateLastLogin(user.id);
     return this.tokenService.generateTokens(user, meta);
   }

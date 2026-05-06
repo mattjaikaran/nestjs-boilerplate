@@ -21,6 +21,8 @@ import type { ForgotPasswordDto } from './dto/forgot-password.dto';
 import type { MagicLinkDto } from './dto/magic-link.dto';
 import type { RegisterDto } from './dto/register.dto';
 import type { ResetPasswordDto } from './dto/reset-password.dto';
+import type { TotpVerifyDto } from './dto/totp.dto';
+import type { TotpService } from './totp.service';
 import type { WebAuthnService } from './webauthn.service';
 
 @ApiTags('Auth')
@@ -28,6 +30,7 @@ import type { WebAuthnService } from './webauthn.service';
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private totpService: TotpService,
     private webauthnService: WebAuthnService,
   ) {}
 
@@ -150,6 +153,45 @@ export class AuthController {
   @ApiOperation({ summary: 'GitHub OAuth callback' })
   async githubCallback(@CurrentUser() user: User) {
     return this.authService.login(user);
+  }
+
+  // TOTP
+  @Post('totp/setup')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate TOTP secret and QR code' })
+  async totpSetup(@CurrentUser() user: User) {
+    return this.totpService.generateSetup(user);
+  }
+
+  @Post('totp/enable')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Enable TOTP after verifying first code' })
+  async totpEnable(@CurrentUser() user: User, @Body() dto: TotpVerifyDto) {
+    await this.totpService.enable(user, dto.token);
+  }
+
+  @Post('totp/disable')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Disable TOTP (requires valid current code)' })
+  async totpDisable(@CurrentUser() user: User, @Body() dto: TotpVerifyDto) {
+    await this.totpService.disable(user, dto.token);
+  }
+
+  @Public()
+  @Post('totp/verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Complete login with TOTP code (second factor)' })
+  async totpVerifyLogin(
+    @Body('userId') userId: string,
+    @Body('token') token: string,
+    @Req() req: FastifyRequest,
+  ) {
+    return this.authService.loginWithTotp(userId, token, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 
   // WebAuthn
