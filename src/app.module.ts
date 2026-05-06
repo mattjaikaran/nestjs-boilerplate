@@ -16,6 +16,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import appConfig from './config/app.config';
 import authConfig from './config/auth.config';
 import databaseConfig from './config/database.config';
+import { envValidationSchema } from './config/env.validation';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
 import stripeConfig from './config/stripe.config';
@@ -37,6 +38,8 @@ import { UsersModule } from './users/users.module';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
       load: [appConfig, databaseConfig, jwtConfig, authConfig, stripeConfig, redisConfig],
+      validationSchema: envValidationSchema,
+      validationOptions: { abortEarly: false },
       expandVariables: true,
       cache: true,
     }),
