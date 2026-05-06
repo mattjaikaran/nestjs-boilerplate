@@ -5,6 +5,7 @@ import { DRIZZLE, type DrizzleDB } from '../database/drizzle.module';
 import { type User, refreshTokens } from '../database/schema';
 import { UsersService } from '../users/users.service';
 import type { RegisterDto } from './dto/register.dto';
+import { LockoutService } from './lockout.service';
 import { OtpService, type OtpType } from './otp.service';
 import { TokenService } from './token.service';
 import { TotpService } from './totp.service';
@@ -33,6 +34,7 @@ export class AuthService {
     private tokenService: TokenService,
     private otpService: OtpService,
     private totpService: TotpService,
+    private lockoutService: LockoutService,
     @Inject(DRIZZLE) private db: DrizzleDB,
   ) {}
 
@@ -58,10 +60,19 @@ export class AuthService {
   }
 
   async validateLocalUser(email: string, password: string): Promise<User | null> {
+    await this.lockoutService.checkLocked(email);
     const user = await this.usersService.findByEmail(email);
-    if (!user?.password) return null;
+    if (!user?.password) {
+      await this.lockoutService.recordFailure(email);
+      return null;
+    }
     const valid = await argon2.verify(user.password, password);
-    return valid ? user : null;
+    if (!valid) {
+      await this.lockoutService.recordFailure(email);
+      return null;
+    }
+    await this.lockoutService.clearFailures(email);
+    return user;
   }
 
   async login(user: User, meta?: { ipAddress?: string; userAgent?: string }): Promise<LoginResult> {

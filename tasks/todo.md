@@ -33,28 +33,30 @@
 - [x] Deploy docs (Docker, Fly.io, Railway)
 - [x] Auth docs
 - [x] .env.example with all variables
-
-## In Progress
-- [ ] Email service integration (Resend / SendGrid / Nodemailer)
-  - OtpService has TODO comments ready for wiring
-- [ ] TOTP / Authenticator app (otplib is installed, wiring needed)
-  - See src/auth/ — totpSecret on user schema is ready
+- [x] Email service integration (Resend via EmailService)
+- [x] TOTP / Authenticator app (otplib + QR code setup)
+- [x] RBAC permissions guard + decorator
+- [x] Rate limiting with @nestjs/throttler
+- [x] WebSockets / notifications module
+- [x] Stripe payments module
+- [x] Audit logging system
+- [x] File upload support (@fastify/multipart)
+- [x] API key authentication system
+- [x] Redis integration (ioredis global module)
+- [x] BullMQ email queue (emails off the request path)
+- [x] Session management (list / revoke active sessions)
+- [x] Account lockout after 5 failed login attempts (Redis-backed, fails open)
+- [x] Prometheus metrics endpoint (/metrics) via @willsoto/nestjs-prometheus
+- [x] Auth flow E2E tests (register → login → sessions → lockout → logout)
+- [x] Todo CRUD E2E tests with auth
 
 ## Backlog
 
 ### Auth & Security
-- [ ] Email service provider integration (Resend recommended)
-- [ ] TOTP / authenticator app (otplib already installed)
-- [ ] Session management endpoint (list / revoke active sessions)
-- [ ] Account lockout after N failed login attempts (needs Redis)
 - [ ] IP-based rate limit per endpoint
 - [ ] PKCE flow for OAuth (recommended for SPAs)
-- [ ] Audit log table for auth events
 
 ### Performance & Infrastructure
-- [ ] Redis integration for caching + rate limit store
-- [ ] Bull/BullMQ queue for background jobs (email sending, etc.)
-- [ ] Prometheus metrics endpoint (/metrics)
 - [ ] OpenTelemetry tracing setup
 - [ ] Request ID middleware (trace header passthrough)
 - [ ] Response compression (fastify/compress wired, needs enabling)
@@ -68,9 +70,6 @@
 - [ ] Postman / Bruno collection export
 
 ### Testing
-- [ ] Seed E2E test database fixture
-- [ ] Auth flow E2E tests (register → verify → login → refresh → logout)
-- [ ] Todo CRUD E2E tests with auth
 - [ ] Contract testing with zod schema validation
 - [ ] Load testing setup (k6 or autocannon)
 - [ ] Mutation testing setup

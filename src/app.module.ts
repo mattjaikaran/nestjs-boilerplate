@@ -14,11 +14,15 @@ import appConfig from './config/app.config';
 import authConfig from './config/auth.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
+import redisConfig from './config/redis.config';
 import stripeConfig from './config/stripe.config';
 import { DrizzleModule } from './database/drizzle.module';
 import { HealthModule } from './health/health.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
+import { QueueModule } from './queue/queue.module';
+import { RedisModule } from './redis/redis.module';
 import { TodosModule } from './todos/todos.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
@@ -28,7 +32,7 @@ import { UsersModule } from './users/users.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
-      load: [appConfig, databaseConfig, jwtConfig, authConfig, stripeConfig],
+      load: [appConfig, databaseConfig, jwtConfig, authConfig, stripeConfig, redisConfig],
       expandVariables: true,
       cache: true,
     }),
@@ -38,6 +42,9 @@ import { UsersModule } from './users/users.module';
       { name: 'long', ttl: 60000, limit: 100 },
     ]),
     DrizzleModule,
+    RedisModule,
+    QueueModule,
+    MetricsModule,
     AuthModule,
     UsersModule,
     TodosModule,

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -23,6 +24,7 @@ import type { MagicLinkDto } from './dto/magic-link.dto';
 import type { RegisterDto } from './dto/register.dto';
 import type { ResetPasswordDto } from './dto/reset-password.dto';
 import type { TotpVerifyDto } from './dto/totp.dto';
+import { TokenService } from './token.service';
 import { TotpService } from './totp.service';
 import { WebAuthnService } from './webauthn.service';
 
@@ -31,6 +33,7 @@ import { WebAuthnService } from './webauthn.service';
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private tokenService: TokenService,
     private totpService: TotpService,
     private webauthnService: WebAuthnService,
   ) {}
@@ -234,5 +237,36 @@ export class AuthController {
   ) {
     const user = await this.webauthnService.verifyAuthentication(email, response);
     return this.authService.login(user);
+  }
+
+  // Sessions
+  @Get('sessions')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List active sessions for current user' })
+  async listSessions(@CurrentUser('id') userId: string) {
+    const sessions = await this.tokenService.listActiveSessions(userId);
+    return sessions.map(({ id, userAgent, ipAddress, createdAt, expiresAt }) => ({
+      id,
+      userAgent,
+      ipAddress,
+      createdAt,
+      expiresAt,
+    }));
+  }
+
+  @Delete('sessions/:id')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revoke a specific session' })
+  async revokeSession(@Param('id') sessionId: string, @CurrentUser('id') userId: string) {
+    await this.tokenService.revokeSession(sessionId, userId);
+  }
+
+  @Delete('sessions')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revoke all sessions (sign out everywhere)' })
+  async revokeAllSessions(@CurrentUser('id') userId: string) {
+    await this.tokenService.revokeAllUserTokens(userId);
   }
 }

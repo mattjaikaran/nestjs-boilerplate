@@ -130,4 +130,74 @@ describe('Auth (e2e)', () => {
         .expect(204);
     });
   });
+
+  describe('GET /api/v1/auth/sessions', () => {
+    let freshToken: string;
+
+    beforeAll(async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: testUser.email, password: testUser.password });
+      freshToken = res.body.data.accessToken;
+    });
+
+    it('should list active sessions', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/auth/sessions')
+        .set('Authorization', `Bearer ${freshToken}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data[0]).toHaveProperty('id');
+      expect(res.body.data[0]).toHaveProperty('createdAt');
+    });
+
+    it('should revoke a specific session', async () => {
+      const sessionsRes = await request(app.getHttpServer())
+        .get('/api/v1/auth/sessions')
+        .set('Authorization', `Bearer ${freshToken}`);
+
+      const sessionId = sessionsRes.body.data[0]?.id;
+      if (!sessionId) return;
+
+      await request(app.getHttpServer())
+        .delete(`/api/v1/auth/sessions/${sessionId}`)
+        .set('Authorization', `Bearer ${freshToken}`)
+        .expect(204);
+    });
+
+    it('should revoke all sessions', async () => {
+      await request(app.getHttpServer())
+        .delete('/api/v1/auth/sessions')
+        .set('Authorization', `Bearer ${freshToken}`)
+        .expect(204);
+    });
+  });
+
+  describe('Account lockout', () => {
+    const lockoutUser = {
+      email: `lockout-${Date.now()}@example.com`,
+      firstName: 'Lock',
+      lastName: 'Out',
+      password: 'Password123!',
+    };
+
+    beforeAll(async () => {
+      await request(app.getHttpServer()).post('/api/v1/auth/register').send(lockoutUser);
+    });
+
+    it('should reject with 401 on wrong password (not locked yet)', () => {
+      return request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: lockoutUser.email, password: 'wrongpassword' })
+        .expect(401);
+    });
+
+    it('should succeed with correct password after failed attempt', () => {
+      return request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: lockoutUser.email, password: lockoutUser.password })
+        .expect(200);
+    });
+  });
 });

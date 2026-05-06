@@ -3,7 +3,7 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { and, eq, gt } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../database/drizzle.module';
 import { type OTP, type User, otps } from '../database/schema';
-import { EmailService } from '../email/email.service';
+import { QueueService } from '../queue/queue.service';
 
 export type OtpType = OTP['type'];
 
@@ -11,7 +11,7 @@ export type OtpType = OTP['type'];
 export class OtpService {
   constructor(
     @Inject(DRIZZLE) private db: DrizzleDB,
-    private emailService: EmailService,
+    private queueService: QueueService,
   ) {}
 
   async createAndSendOtp(user: User, type: OtpType): Promise<OTP> {
@@ -31,13 +31,13 @@ export class OtpService {
 
     switch (type) {
       case 'email_verification':
-        await this.emailService.sendEmailVerification(user.email, code, token);
+        await this.queueService.sendVerificationEmail(user.email, code, token);
         break;
       case 'password_reset':
-        await this.emailService.sendPasswordReset(user.email, code, token);
+        await this.queueService.sendPasswordResetEmail(user.email, code, token);
         break;
       case 'magic_link':
-        await this.emailService.sendMagicLink(user.email, token);
+        await this.queueService.sendMagicLinkEmail(user.email, token);
         break;
     }
 

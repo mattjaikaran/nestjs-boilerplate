@@ -1,9 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { eq } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../database/drizzle.module';
-import { type User, refreshTokens } from '../database/schema';
+import { type RefreshToken, type User, refreshTokens } from '../database/schema';
 import type { AuthTokens } from './auth.service';
 
 @Injectable()
@@ -78,5 +78,34 @@ export class TokenService {
       .update(refreshTokens)
       .set({ isRevoked: true })
       .where(eq(refreshTokens.userId, userId));
+  }
+
+  async listActiveSessions(userId: string): Promise<RefreshToken[]> {
+    return this.db
+      .select()
+      .from(refreshTokens)
+      .where(
+        and(
+          eq(refreshTokens.userId, userId),
+          eq(refreshTokens.isRevoked, false),
+          gt(refreshTokens.expiresAt, new Date()),
+        ),
+      )
+      .orderBy(refreshTokens.createdAt);
+  }
+
+  async revokeSession(sessionId: string, userId: string): Promise<void> {
+    const [session] = await this.db
+      .select()
+      .from(refreshTokens)
+      .where(and(eq(refreshTokens.id, sessionId), eq(refreshTokens.userId, userId)))
+      .limit(1);
+
+    if (!session) throw new NotFoundException('Session not found');
+
+    await this.db
+      .update(refreshTokens)
+      .set({ isRevoked: true })
+      .where(eq(refreshTokens.id, sessionId));
   }
 }
