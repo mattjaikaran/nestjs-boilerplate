@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { AuthenticationResponseJSON, RegistrationResponseJSON } from '@simplewebauthn/types';
 import type { FastifyRequest } from 'fastify';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -36,6 +37,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: 'Register with email/password' })
   async register(@Body() dto: RegisterDto, @Req() req: FastifyRequest) {
     return this.authService.register(dto, {
@@ -48,6 +50,7 @@ export class AuthController {
   @Post('login')
   @UseGuards(AuthGuard('local'))
   @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: 'Login with email/password' })
   async login(@Req() req: FastifyRequest, @CurrentUser() user: User) {
     return this.authService.login(user, {
@@ -85,6 +88,7 @@ export class AuthController {
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ short: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Request password reset email' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.authService.requestPasswordReset(dto.email);

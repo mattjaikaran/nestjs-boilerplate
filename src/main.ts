@@ -3,6 +3,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -19,6 +20,24 @@ async function bootstrap() {
   );
 
   const configService = app.get(ConfigService);
+
+  // WebSocket adapter (Socket.io)
+  app.useWebSocketAdapter(new IoAdapter(app));
+
+  // Raw body parser for Stripe webhook signature verification
+  const fastify = app.getHttpAdapter().getInstance();
+  fastify.addContentTypeParser(
+    'application/json',
+    { parseAs: 'buffer' },
+    (req: unknown, body: Buffer, done: (err: Error | null, body: Buffer) => void) => {
+      (req as Record<string, unknown>).rawBody = body;
+      try {
+        done(null, JSON.parse(body.toString()));
+      } catch (e) {
+        done(e as Error, body);
+      }
+    },
+  );
 
   // Multipart / file uploads
   await app.register(multipart as never, {

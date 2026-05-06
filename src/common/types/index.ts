@@ -1,4 +1,16 @@
 export type UserRole = 'admin' | 'user' | 'moderator';
+export type Permission =
+  | 'users:read'
+  | 'users:write'
+  | 'users:delete'
+  | 'todos:read'
+  | 'todos:write'
+  | 'todos:delete'
+  | 'admin:access'
+  | 'admin:users'
+  | 'admin:audit'
+  | 'payments:read'
+  | 'payments:write';
 export type AuthProvider = 'local' | 'google' | 'github';
 export type OtpType = 'email_verification' | 'password_reset' | 'magic_link' | 'two_factor';
 export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
