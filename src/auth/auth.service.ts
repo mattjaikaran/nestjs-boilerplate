@@ -1,7 +1,9 @@
-import { ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as argon2 from 'argon2';
 import { and, eq, gt } from 'drizzle-orm';
+import { AppException } from '../common/errors/app.exception';
+import { ErrorCode } from '../common/errors/error-codes';
 import {
   UserEmailVerifiedEvent,
   UserLoginEvent,
@@ -51,7 +53,12 @@ export class AuthService {
     meta?: { ipAddress?: string; userAgent?: string },
   ): Promise<AuthTokens> {
     const existing = await this.usersService.findByEmail(dto.email);
-    if (existing) throw new ConflictException('Email already registered');
+    if (existing)
+      throw new AppException(
+        ErrorCode.AUTH_EMAIL_ALREADY_EXISTS,
+        'Email already registered',
+        HttpStatus.CONFLICT,
+      );
 
     const hashedPassword = await argon2.hash(dto.password);
     const user = await this.usersService.create({
@@ -85,7 +92,12 @@ export class AuthService {
   }
 
   async login(user: User, meta?: { ipAddress?: string; userAgent?: string }): Promise<LoginResult> {
-    if (!user.isActive) throw new UnauthorizedException('Account disabled');
+    if (!user.isActive)
+      throw new AppException(
+        ErrorCode.AUTH_ACCOUNT_DISABLED,
+        'Account disabled',
+        HttpStatus.UNAUTHORIZED,
+      );
 
     if (user.isTotpEnabled) {
       return { requiresTOTP: true, userId: user.id };
@@ -102,10 +114,20 @@ export class AuthService {
     meta?: { ipAddress?: string; userAgent?: string },
   ): Promise<AuthTokens> {
     const user = await this.usersService.findById(userId);
-    if (!user || !user.isActive) throw new UnauthorizedException();
+    if (!user || !user.isActive)
+      throw new AppException(
+        ErrorCode.AUTH_INVALID_CREDENTIALS,
+        'Unauthorized',
+        HttpStatus.UNAUTHORIZED,
+      );
 
     const valid = this.totpService.verify(user, totpToken);
-    if (!valid) throw new UnauthorizedException('Invalid TOTP token');
+    if (!valid)
+      throw new AppException(
+        ErrorCode.AUTH_TOTP_INVALID,
+        'Invalid TOTP token',
+        HttpStatus.UNAUTHORIZED,
+      );
 
     await this.usersService.updateLastLogin(user.id);
     return this.tokenService.generateTokens(user, meta);
@@ -127,10 +149,20 @@ export class AuthService {
       )
       .limit(1);
 
-    if (!tokenRecord) throw new UnauthorizedException('Invalid or expired refresh token');
+    if (!tokenRecord)
+      throw new AppException(
+        ErrorCode.AUTH_TOKEN_INVALID,
+        'Invalid or expired refresh token',
+        HttpStatus.UNAUTHORIZED,
+      );
 
     const user = await this.usersService.findById(tokenRecord.userId);
-    if (!user || !user.isActive) throw new UnauthorizedException();
+    if (!user || !user.isActive)
+      throw new AppException(
+        ErrorCode.AUTH_INVALID_CREDENTIALS,
+        'Unauthorized',
+        HttpStatus.UNAUTHORIZED,
+      );
 
     await this.tokenService.revokeToken(refreshTokenValue);
 
@@ -207,7 +239,12 @@ export class AuthService {
   ): Promise<AuthTokens> {
     const otp = await this.otpService.validateByToken(token, 'magic_link');
     const user = await this.usersService.findById(otp.userId);
-    if (!user) throw new UnauthorizedException();
+    if (!user)
+      throw new AppException(
+        ErrorCode.AUTH_INVALID_CREDENTIALS,
+        'Unauthorized',
+        HttpStatus.UNAUTHORIZED,
+      );
     await this.otpService.markUsed(otp.id);
     if (!user.isEmailVerified) {
       await this.usersService.update(user.id, { isEmailVerified: true });

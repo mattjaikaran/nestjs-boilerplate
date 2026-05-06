@@ -1,6 +1,8 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { and, asc, desc, eq, ilike, isNull, sql } from 'drizzle-orm';
 import type { PaginatedResponse, PaginationDto } from '../common/dto/pagination.dto';
+import { AppException } from '../common/errors/app.exception';
+import { ErrorCode } from '../common/errors/error-codes';
 import { DRIZZLE, type DrizzleDB } from '../database/drizzle.module';
 import { type NewTodo, type Todo, todos } from '../database/schema';
 import type { CreateTodoDto } from './dto/create-todo.dto';
@@ -68,8 +70,10 @@ export class TodosService {
       .from(todos)
       .where(and(eq(todos.id, id), isNull(todos.deletedAt)))
       .limit(1);
-    if (!todo) throw new NotFoundException('Todo not found');
-    if (todo.userId !== userId) throw new ForbiddenException();
+    if (!todo)
+      throw new AppException(ErrorCode.TODO_NOT_FOUND, 'Todo not found', HttpStatus.NOT_FOUND);
+    if (todo.userId !== userId)
+      throw new AppException(ErrorCode.TODO_FORBIDDEN, 'Forbidden', HttpStatus.FORBIDDEN);
     return todo;
   }
 
