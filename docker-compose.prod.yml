@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      POSTGRES_DB: ${DB_NAME:-nestjs_boilerplate}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: ${DOCKER_IMAGE:-nestjs-boilerplate:latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-nestjs_boilerplate}
+    ports:
+      - '${PORT:-3000}:3000'
+    command: sh -c "node dist/main"
+
+volumes:
+  postgres_data:
