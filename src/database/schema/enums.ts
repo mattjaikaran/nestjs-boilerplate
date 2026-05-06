@@ -15,3 +15,4 @@ export const todoStatusEnum = pgEnum('todo_status', [
   'cancelled',
 ]);
 export const todoPriorityEnum = pgEnum('todo_priority', ['low', 'medium', 'high']);
+export const orgRoleEnum = pgEnum('org_role', ['owner', 'admin', 'member', 'viewer']);

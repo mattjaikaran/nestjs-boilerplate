@@ -1,3 +1,6 @@
+import { startTracing } from './tracing';
+startTracing();
+
 import compress from '@fastify/compress';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
