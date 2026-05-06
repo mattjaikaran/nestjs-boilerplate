@@ -253,7 +253,7 @@ make typecheck    # tsc --noEmit
 
 ```bash
 make docker-up    # start postgres + redis
-make db-reset     # drop + recreate schema
+make db-reset     # drop + recreate schema (dev only — unsafe in prod)
 make db-seed      # seed: 1 admin + 3 users + todos
 make db-down      # stop containers
 ```
@@ -261,6 +261,29 @@ make db-down      # stop containers
 Seed credentials (all use `Password123!`):
 - `admin@example.com` (admin role)
 - `alice@example.com`, `bob@example.com`, `charlie@example.com`
+
+### Migrations
+
+Migration files live in `src/database/migrations/`. **Never use `db:push` in production** — it mutates the schema without a history and cannot be rolled back.
+
+```bash
+# Development workflow
+bun run db:generate   # diff schema → new SQL migration file
+bun run db:migrate    # apply pending migrations to the database
+bun run db:studio     # open Drizzle Studio (visual DB browser)
+
+# First-time setup (same as make db-reset, but explicit)
+bun run db:migrate
+bun run db:seed
+```
+
+**Deploy pattern**: run `bun run db:migrate` before the new binary starts. In Docker:
+
+```bash
+docker compose exec api bun run db:migrate
+```
+
+In CI/CD (Railway, Fly.io), add a release command that runs migrations before the new instance accepts traffic. See [docs/deploy.md](docs/deploy.md) for platform-specific instructions.
 
 ## Generating a New Module
 
