@@ -1,6 +1,13 @@
 import { ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as argon2 from 'argon2';
 import { and, eq, gt } from 'drizzle-orm';
+import {
+  UserEmailVerifiedEvent,
+  UserLoginEvent,
+  UserPasswordResetEvent,
+  UserRegisteredEvent,
+} from '../common/events/user.events';
 import { DRIZZLE, type DrizzleDB } from '../database/drizzle.module';
 import { type User, refreshTokens } from '../database/schema';
 import { UsersService } from '../users/users.service';
@@ -35,6 +42,7 @@ export class AuthService {
     private otpService: OtpService,
     private totpService: TotpService,
     private lockoutService: LockoutService,
+    private eventEmitter: EventEmitter2,
     @Inject(DRIZZLE) private db: DrizzleDB,
   ) {}
 
@@ -55,6 +63,7 @@ export class AuthService {
     });
 
     await this.otpService.createAndSendOtp(user, 'email_verification');
+    this.eventEmitter.emit('user.registered', new UserRegisteredEvent(user));
 
     return this.tokenService.generateTokens(user, meta);
   }
@@ -83,6 +92,7 @@ export class AuthService {
     }
 
     await this.usersService.updateLastLogin(user.id);
+    this.eventEmitter.emit('user.login', new UserLoginEvent(user.id, meta?.ipAddress));
     return this.tokenService.generateTokens(user, meta);
   }
 
@@ -175,12 +185,14 @@ export class AuthService {
     await this.usersService.update(otp.userId, { password: hashedPassword });
     await this.otpService.markUsed(otp.id);
     await this.tokenService.revokeAllUserTokens(otp.userId);
+    this.eventEmitter.emit('user.password_reset', new UserPasswordResetEvent(otp.userId));
   }
 
   async verifyEmail(token: string): Promise<void> {
     const otp = await this.otpService.validateByToken(token, 'email_verification');
     await this.usersService.update(otp.userId, { isEmailVerified: true });
     await this.otpService.markUsed(otp.id);
+    this.eventEmitter.emit('user.email_verified', new UserEmailVerifiedEvent(otp.userId));
   }
 
   async sendMagicLink(email: string): Promise<void> {

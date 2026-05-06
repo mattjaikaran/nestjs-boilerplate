@@ -8,6 +8,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { RequestContextInterceptor } from './common/interceptors/request-context.interceptor';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 
 async function bootstrap() {
@@ -72,8 +73,12 @@ async function bootstrap() {
   // Global filters
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Global interceptors
-  app.useGlobalInterceptors(new LoggingInterceptor(), new ResponseTransformInterceptor());
+  // Global interceptors — order matters: context first, then logging, then transform
+  app.useGlobalInterceptors(
+    new RequestContextInterceptor(),
+    new LoggingInterceptor(),
+    new ResponseTransformInterceptor(),
+  );
 
   // Swagger
   if (configService.get('NODE_ENV') !== 'production') {

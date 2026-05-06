@@ -1,10 +1,12 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';
 import * as argon2 from 'argon2';
 import { DRIZZLE } from '../database/drizzle.module';
 import type { User } from '../database/schema';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
+import { LockoutService } from './lockout.service';
 import { OtpService } from './otp.service';
 import { TokenService } from './token.service';
 import { TotpService } from './totp.service';
@@ -102,6 +104,18 @@ describe('AuthService', () => {
           },
         },
         { provide: DRIZZLE, useValue: mockDb },
+        {
+          provide: LockoutService,
+          useValue: {
+            checkLocked: jest.fn(),
+            recordFailure: jest.fn(),
+            clearFailures: jest.fn(),
+          },
+        },
+        {
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn() },
+        },
       ],
     }).compile();
 

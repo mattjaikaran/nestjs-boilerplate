@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { AppCacheModule } from './cache/cache.module';
+import { DomainEventListener } from './common/events/domain-event.listener';
 import { ApiKeyGuard } from './common/guards/api-key.guard';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -23,6 +26,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 import { TodosModule } from './todos/todos.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
@@ -36,15 +40,23 @@ import { UsersModule } from './users/users.module';
       expandVariables: true,
       cache: true,
     }),
+    EventEmitterModule.forRoot({
+      wildcard: true,
+      delimiter: '.',
+      maxListeners: 20,
+      ignoreErrors: false,
+    }),
     ThrottlerModule.forRoot([
       { name: 'short', ttl: 1000, limit: 10 },
       { name: 'medium', ttl: 10000, limit: 50 },
       { name: 'long', ttl: 60000, limit: 100 },
     ]),
+    AppCacheModule,
     DrizzleModule,
     RedisModule,
     QueueModule,
     MetricsModule,
+    SchedulerModule,
     AuthModule,
     UsersModule,
     TodosModule,
@@ -57,6 +69,7 @@ import { UsersModule } from './users/users.module';
   controllers: [AppController],
   providers: [
     AppService,
+    DomainEventListener,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
