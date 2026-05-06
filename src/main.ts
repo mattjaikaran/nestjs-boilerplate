@@ -1,3 +1,4 @@
+import multipart from '@fastify/multipart';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -18,6 +19,14 @@ async function bootstrap() {
   );
 
   const configService = app.get(ConfigService);
+
+  // Multipart / file uploads
+  await app.register(multipart as never, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10 MB
+      files: 5,
+    },
+  });
 
   // Global prefix
   app.setGlobalPrefix('api');

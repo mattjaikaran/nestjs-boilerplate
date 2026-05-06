@@ -15,6 +15,7 @@ import jwtConfig from './config/jwt.config';
 import { DrizzleModule } from './database/drizzle.module';
 import { HealthModule } from './health/health.module';
 import { TodosModule } from './todos/todos.module';
+import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     UsersModule,
     TodosModule,
+    UploadsModule,
     HealthModule,
   ],
   controllers: [AppController],
