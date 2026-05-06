@@ -3,11 +3,11 @@ import * as argon2 from 'argon2';
 import { and, eq, gt } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../database/drizzle.module';
 import { type User, refreshTokens } from '../database/schema';
-import type { UsersService } from '../users/users.service';
+import { UsersService } from '../users/users.service';
 import type { RegisterDto } from './dto/register.dto';
-import type { OtpService, OtpType } from './otp.service';
-import type { TokenService } from './token.service';
-import type { TotpService } from './totp.service';
+import { OtpService, type OtpType } from './otp.service';
+import { TokenService } from './token.service';
+import { TotpService } from './totp.service';
 
 export type LoginResult = AuthTokens | { requiresTOTP: true; userId: string };
 

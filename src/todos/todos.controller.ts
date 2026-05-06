@@ -15,7 +15,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { PaginationDto } from '../common/dto/pagination.dto';
 import type { CreateTodoDto } from './dto/create-todo.dto';
 import type { UpdateTodoDto } from './dto/update-todo.dto';
-import type { TodosService } from './todos.service';
+import { TodosService } from './todos.service';
 
 @ApiTags('Todos')
 @ApiBearerAuth()

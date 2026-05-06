@@ -16,14 +16,14 @@ import type { FastifyRequest } from 'fastify';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import type { User } from '../database/schema';
-import type { AuthService } from './auth.service';
+import { AuthService } from './auth.service';
 import type { ForgotPasswordDto } from './dto/forgot-password.dto';
 import type { MagicLinkDto } from './dto/magic-link.dto';
 import type { RegisterDto } from './dto/register.dto';
 import type { ResetPasswordDto } from './dto/reset-password.dto';
 import type { TotpVerifyDto } from './dto/totp.dto';
-import type { TotpService } from './totp.service';
-import type { WebAuthnService } from './webauthn.service';
+import { TotpService } from './totp.service';
+import { WebAuthnService } from './webauthn.service';
 
 @ApiTags('Auth')
 @Controller('auth')

@@ -15,7 +15,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import type { PaginationDto } from '../common/dto/pagination.dto';
 import type { User } from '../database/schema';
 import type { UpdateUserDto } from './dto/update-user.dto';
-import type { UsersService } from './users.service';
+import { UsersService } from './users.service';
 
 @ApiTags('Users')
 @ApiBearerAuth()

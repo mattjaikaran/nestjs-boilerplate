@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import {
   generateAuthenticationOptions,
   generateRegistrationOptions,
@@ -8,7 +8,7 @@ import {
 } from '@simplewebauthn/server';
 import type { AuthenticationResponseJSON, RegistrationResponseJSON } from '@simplewebauthn/types';
 import type { User, WebAuthnCredential } from '../database/schema';
-import type { UsersService } from '../users/users.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class WebAuthnService {
