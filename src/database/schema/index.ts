@@ -5,5 +5,3 @@ export * from './auth.schema';
 export * from './api-keys.schema';
 export * from './audit.schema';
 export * from './payments.schema';
-export * from './feature-flags.schema';
-export * from './organizations.schema';

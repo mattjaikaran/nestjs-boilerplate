@@ -21,11 +21,9 @@ import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
 import stripeConfig from './config/stripe.config';
 import { DrizzleModule } from './database/drizzle.module';
-import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { NotificationsModule } from './notifications/notifications.module';
-import { OrganizationsModule } from './organizations/organizations.module';
 import { PaymentsModule } from './payments/payments.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
@@ -70,8 +68,6 @@ import { UsersModule } from './users/users.module';
     HealthModule,
     NotificationsModule,
     PaymentsModule,
-    FeatureFlagsModule,
-    OrganizationsModule,
   ],
   controllers: [AppController],
   providers: [
