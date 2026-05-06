@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { createWriteStream, mkdirSync } from 'node:fs';
+import { createWriteStream, mkdirSync, unlink } from 'node:fs';
 import { extname, join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import type { MultipartFile } from '@fastify/multipart';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AppException } from '../common/errors/app.exception';
+import { ErrorCode } from '../common/errors/error-codes';
 
 export interface UploadedFile {
   filename: string;
@@ -42,7 +44,11 @@ export class UploadsService {
 
   async saveFile(file: MultipartFile, subfolder = ''): Promise<UploadedFile> {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException(`File type ${file.mimetype} is not allowed`);
+      throw new AppException(
+        ErrorCode.UPLOAD_INVALID_TYPE,
+        `File type ${file.mimetype} is not allowed`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const ext = extname(file.filename) || this.mimeToExt(file.mimetype);
@@ -55,21 +61,31 @@ export class UploadsService {
 
     const dest = createWriteStream(filePath);
 
-    await pipeline(
-      file.file,
-      async function* (source) {
-        for await (const chunk of source) {
-          size += chunk.length;
-          if (size > MAX_FILE_SIZE) {
-            throw new BadRequestException(
-              `File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB`,
-            );
+    try {
+      await pipeline(
+        file.file,
+        async function* (source) {
+          for await (const chunk of source) {
+            size += chunk.length;
+            if (size > MAX_FILE_SIZE) {
+              throw new AppException(
+                ErrorCode.UPLOAD_TOO_LARGE,
+                `File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+            yield chunk;
           }
-          yield chunk;
-        }
-      },
-      dest,
-    );
+        },
+        dest,
+      );
+    } catch (err) {
+      unlink(filePath, (unlinkErr) => {
+        if (unlinkErr)
+          this.logger.warn(`Failed to clean up partial upload ${filePath}: ${unlinkErr.message}`);
+      });
+      throw err;
+    }
 
     const relativePath = subfolder ? `${subfolder}/${filename}` : filename;
     const url = `${this.baseUrl}/api/v1/uploads/${relativePath}`;

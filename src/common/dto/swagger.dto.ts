@@ -89,6 +89,87 @@ export class TodoResponseDto {
   updatedAt: Date;
 }
 
+export class CheckoutSessionResponseDto {
+  @ApiProperty({ example: 'https://checkout.stripe.com/...' })
+  url: string;
+}
+
+export class PortalSessionResponseDto {
+  @ApiProperty({ example: 'https://billing.stripe.com/...' })
+  url: string;
+}
+
+export class SubscriptionResponseDto {
+  @ApiProperty({ example: 'uuid-v4', nullable: true })
+  id: string | null;
+
+  @ApiProperty({ example: 'uuid-v4' })
+  userId: string;
+
+  @ApiProperty({ example: 'cus_xxx' })
+  stripeCustomerId: string;
+
+  @ApiProperty({ example: 'sub_xxx' })
+  stripeSubscriptionId: string;
+
+  @ApiProperty({
+    example: 'active',
+    enum: ['active', 'trialing', 'past_due', 'canceled', 'unpaid'],
+  })
+  status: string;
+
+  @ApiProperty()
+  currentPeriodStart: Date;
+
+  @ApiProperty()
+  currentPeriodEnd: Date;
+}
+
+export class PaymentHistoryItemDto {
+  @ApiProperty({ example: 'uuid-v4' })
+  id: string;
+
+  @ApiProperty({ example: 'uuid-v4' })
+  userId: string;
+
+  @ApiProperty({ example: 1999 })
+  amount: number;
+
+  @ApiProperty({ example: 'usd' })
+  currency: string;
+
+  @ApiProperty({ example: 'succeeded', enum: ['succeeded', 'failed', 'pending'] })
+  status: string;
+
+  @ApiProperty()
+  createdAt: Date;
+}
+
+export class UploadedFileResponseDto {
+  @ApiProperty({ example: 'a1b2c3d4.jpg' })
+  filename: string;
+
+  @ApiProperty({ example: 'photo.jpg' })
+  originalName: string;
+
+  @ApiProperty({ example: 'image/jpeg' })
+  mimeType: string;
+
+  @ApiProperty({ example: 204800 })
+  size: number;
+
+  @ApiProperty({ example: 'http://localhost:3000/api/v1/uploads/avatars/a1b2c3d4.jpg' })
+  url: string;
+
+  @ApiProperty({ example: 'uploads/avatars/a1b2c3d4.jpg' })
+  path: string;
+}
+
+export class WebhookReceivedResponseDto {
+  @ApiProperty({ example: true })
+  received: boolean;
+}
+
 export class PaginatedTodosResponseDto {
   @ApiProperty({ type: [TodoResponseDto] })
   data: TodoResponseDto[];

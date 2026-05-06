@@ -1,6 +1,8 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, ilike, isNull, sql } from 'drizzle-orm';
 import type { PaginationDto } from '../common/dto/pagination.dto';
+import { AppException } from '../common/errors/app.exception';
+import { ErrorCode } from '../common/errors/error-codes';
 import { DRIZZLE, type DrizzleDB } from '../database/drizzle.module';
 import { type NewUser, type User, users } from '../database/schema';
 
@@ -78,7 +80,8 @@ export class UsersService {
       .set({ ...data, updatedAt: new Date() })
       .where(and(eq(users.id, id), isNull(users.deletedAt)))
       .returning();
-    if (!updated) throw new NotFoundException('User not found');
+    if (!updated)
+      throw new AppException(ErrorCode.USER_NOT_FOUND, 'User not found', HttpStatus.NOT_FOUND);
     return updated;
   }
 

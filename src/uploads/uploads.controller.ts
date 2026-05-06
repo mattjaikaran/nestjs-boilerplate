@@ -1,6 +1,14 @@
 import { BadRequestException, Controller, Post, Req } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
+import { ErrorResponseDto, UploadedFileResponseDto } from '../common/dto/swagger.dto';
 import { UploadsService } from './uploads.service';
 
 @ApiTags('Uploads')
@@ -20,6 +28,13 @@ export class UploadsController {
       },
     },
   })
+  @ApiResponse({ status: 201, description: 'Avatar uploaded', type: UploadedFileResponseDto })
+  @ApiResponse({
+    status: 400,
+    description: 'No file, invalid type, or file too large',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: ErrorResponseDto })
   async uploadAvatar(@Req() req: FastifyRequest) {
     const file = await req.file();
     if (!file) throw new BadRequestException('No file provided');
@@ -37,6 +52,13 @@ export class UploadsController {
       },
     },
   })
+  @ApiResponse({ status: 201, description: 'File uploaded', type: UploadedFileResponseDto })
+  @ApiResponse({
+    status: 400,
+    description: 'No file, invalid type, or file too large',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: ErrorResponseDto })
   async uploadFile(@Req() req: FastifyRequest) {
     const file = await req.file();
     if (!file) throw new BadRequestException('No file provided');
@@ -57,6 +79,13 @@ export class UploadsController {
       },
     },
   })
+  @ApiResponse({ status: 201, description: 'Files uploaded', type: [UploadedFileResponseDto] })
+  @ApiResponse({
+    status: 400,
+    description: 'No files, invalid type, or file too large',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: ErrorResponseDto })
   async uploadMultiple(@Req() req: FastifyRequest) {
     const parts = req.files({ limits: { files: 5 } });
     const results = [];

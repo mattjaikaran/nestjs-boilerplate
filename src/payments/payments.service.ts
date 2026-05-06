@@ -1,8 +1,10 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 import type { Stripe as StripeNS } from 'stripe/cjs/stripe.core';
+import { AppException } from '../common/errors/app.exception';
+import { ErrorCode } from '../common/errors/error-codes';
 import { DRIZZLE, type DrizzleDB } from '../database/drizzle.module';
 import { payments, subscriptions } from '../database/schema/payments.schema';
 import type { User } from '../database/schema/users.schema';
@@ -62,7 +64,12 @@ export class PaymentsService {
       where: eq(subscriptions.userId, user.id),
     });
 
-    if (!sub) throw new NotFoundException('No active subscription found');
+    if (!sub)
+      throw new AppException(
+        ErrorCode.PAYMENT_SUBSCRIPTION_NOT_FOUND,
+        'No active subscription found',
+        HttpStatus.NOT_FOUND,
+      );
 
     const session = await this.stripe.billingPortal.sessions.create({
       customer: sub.stripeCustomerId,
@@ -97,25 +104,32 @@ export class PaymentsService {
 
     this.logger.log(`Stripe webhook: ${event.type}`);
 
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await this.handleCheckoutCompleted(event.data.object as StripeNS.Checkout.Session);
-        break;
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-        await this.upsertSubscription(event.data.object as StripeNS.Subscription);
-        break;
-      case 'customer.subscription.deleted':
-        await this.handleSubscriptionDeleted(event.data.object as StripeNS.Subscription);
-        break;
-      case 'invoice.payment_succeeded':
-        await this.handleInvoicePaymentSucceeded(event.data.object as StripeNS.Invoice);
-        break;
-      case 'invoice.payment_failed':
-        await this.handleInvoicePaymentFailed(event.data.object as StripeNS.Invoice);
-        break;
-      default:
-        this.logger.debug(`Unhandled Stripe event: ${event.type}`);
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed':
+          await this.handleCheckoutCompleted(event.data.object as StripeNS.Checkout.Session);
+          break;
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+          await this.upsertSubscription(event.data.object as StripeNS.Subscription);
+          break;
+        case 'customer.subscription.deleted':
+          await this.handleSubscriptionDeleted(event.data.object as StripeNS.Subscription);
+          break;
+        case 'invoice.payment_succeeded':
+          await this.handleInvoicePaymentSucceeded(event.data.object as StripeNS.Invoice);
+          break;
+        case 'invoice.payment_failed':
+          await this.handleInvoicePaymentFailed(event.data.object as StripeNS.Invoice);
+          break;
+        default:
+          this.logger.debug(`Unhandled Stripe event: ${event.type}`);
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed processing Stripe event ${event.type}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
     }
   }
 
@@ -170,7 +184,10 @@ export class PaymentsService {
 
   private async handleInvoicePaymentSucceeded(invoice: StripeNS.Invoice): Promise<void> {
     const userId = invoice.parent?.subscription_details?.metadata?.userId;
-    if (!userId) return;
+    if (!userId) {
+      this.logger.warn(`Invoice ${invoice.id} has no userId in metadata — payment record skipped`);
+      return;
+    }
 
     const paymentIntentId = (() => {
       const pi = invoice.payments?.data[0]?.payment.payment_intent;
@@ -190,7 +207,12 @@ export class PaymentsService {
 
   private async handleInvoicePaymentFailed(invoice: StripeNS.Invoice): Promise<void> {
     const userId = invoice.parent?.subscription_details?.metadata?.userId;
-    if (!userId) return;
+    if (!userId) {
+      this.logger.warn(
+        `Invoice ${invoice.id} has no userId in metadata — failed payment record skipped`,
+      );
+      return;
+    }
 
     const paymentIntentId = (() => {
       const pi = invoice.payments?.data[0]?.payment.payment_intent;
