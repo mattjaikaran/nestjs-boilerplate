@@ -1,3 +1,5 @@
+import compress from '@fastify/compress';
+import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -21,9 +23,21 @@ async function bootstrap() {
   );
 
   const configService = app.get(ConfigService);
+  const isProd = configService.get('NODE_ENV') === 'production';
+
+  // Graceful shutdown
+  app.enableShutdownHooks();
 
   // WebSocket adapter (Socket.io)
   app.useWebSocketAdapter(new IoAdapter(app));
+
+  // Security headers
+  await app.register(helmet as never, {
+    contentSecurityPolicy: isProd,
+  });
+
+  // Response compression (brotli → gzip → deflate)
+  await app.register(compress as never, { global: true });
 
   // Raw body parser for Stripe webhook signature verification
   const fastify = app.getHttpAdapter().getInstance();
@@ -80,13 +94,14 @@ async function bootstrap() {
     new ResponseTransformInterceptor(),
   );
 
-  // Swagger
-  if (configService.get('NODE_ENV') !== 'production') {
+  // Swagger (disabled in production)
+  if (!isProd) {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('NestJS Boilerplate API')
-      .setDescription('Production-ready NestJS API with comprehensive auth')
+      .setDescription('Production-ready NestJS 11 API with comprehensive auth')
       .setVersion('1.0')
       .addBearerAuth()
+      .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'api-key')
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup('docs', app, document, {
@@ -99,7 +114,7 @@ async function bootstrap() {
 
   await app.listen(port, host);
   console.log(`Application running on: http://${host}:${port}/api/v1`);
-  console.log(`Swagger docs: http://${host}:${port}/docs`);
+  if (!isProd) console.log(`Swagger docs: http://${host}:${port}/docs`);
 }
 
 bootstrap();

@@ -13,6 +13,7 @@ This guide covers deploying to:
 
 - Docker & Docker Compose
 - PostgreSQL 15+
+- Redis 7+
 - `bun` installed locally for builds
 
 ---
@@ -24,9 +25,15 @@ Copy `.env.example` to `.env.production` and fill in all values. Required:
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | Redis connection string (`redis://...`) |
 | `JWT_SECRET` | Secret for access tokens (min 32 chars) |
 | `JWT_REFRESH_SECRET` | Secret for refresh tokens (different from JWT_SECRET) |
 | `NODE_ENV` | Set to `production` |
+| `RESEND_API_KEY` | Resend API key for transactional email |
+| `EMAIL_FROM` | From address for outbound email |
+| `STRIPE_SECRET_KEY` | Stripe secret key (live) |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `CORS_ORIGINS` | Comma-separated allowed origins |
 
 ---
 
@@ -121,8 +128,11 @@ primary_region = "iad"
 
 - [ ] Run `db:migrate` on first deploy
 - [ ] Verify `/api/v1/health` returns `{ status: "ok" }`
-- [ ] Test `/docs` Swagger UI loads
+- [ ] Confirm `/docs` Swagger UI is disabled in production (`NODE_ENV=production`)
 - [ ] Configure OAuth redirect URLs for production domain
 - [ ] Set `WEBAUTHN_RP_ID` and `WEBAUTHN_ORIGIN` to your production domain
 - [ ] Enable `DB_SSL=true` for cloud databases
-- [ ] Set up monitoring/alerting
+- [ ] Point a Prometheus scraper at `GET /metrics`
+- [ ] Configure Redis password (`REDIS_PASSWORD`) for managed Redis
+- [ ] Verify Stripe webhook endpoint and signing secret are correct
+- [ ] Set up alerting on `auth_login_total{status="failure"}` rate
