@@ -10,11 +10,15 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiKeyService } from '../auth/api-key.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import type { PaginationDto } from '../common/dto/pagination.dto';
+import { ErrorResponseDto, UserResponseDto } from '../common/dto/swagger.dto';
+import { AppException } from '../common/errors/app.exception';
+import { ErrorCode } from '../common/errors/error-codes';
 import type { User } from '../database/schema';
 import type { CreateApiKeyDto } from './dto/create-api-key.dto';
 import type { UpdateUserDto } from './dto/update-user.dto';
@@ -79,6 +83,9 @@ export class UsersController {
   @Get()
   @Roles('admin')
   @ApiOperation({ summary: 'List all users (admin only)' })
+  @ApiResponse({ status: 200, description: 'Paginated user list' })
+  @ApiResponse({ status: 401, description: 'Not authenticated', type: ErrorResponseDto })
+  @ApiResponse({ status: 403, description: 'Admin only', type: ErrorResponseDto })
   findAll(@Query() query: PaginationDto) {
     return this.usersService.findAll(query);
   }
@@ -86,7 +93,14 @@ export class UsersController {
   @Get(':id')
   @Roles('admin')
   @ApiOperation({ summary: 'Get user by ID (admin only)' })
-  findOne(@Param('id') id: string) {
-    return this.usersService.findById(id);
+  @ApiResponse({ status: 200, description: 'User found', type: UserResponseDto })
+  @ApiResponse({ status: 401, description: 'Not authenticated', type: ErrorResponseDto })
+  @ApiResponse({ status: 403, description: 'Admin only', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'User not found', type: ErrorResponseDto })
+  async findOne(@Param('id') id: string) {
+    const user = await this.usersService.findById(id);
+    if (!user)
+      throw new AppException(ErrorCode.USER_NOT_FOUND, 'User not found', HttpStatus.NOT_FOUND);
+    return user;
   }
 }

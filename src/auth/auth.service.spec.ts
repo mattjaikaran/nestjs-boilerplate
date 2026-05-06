@@ -1,7 +1,8 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';
 import * as argon2 from 'argon2';
+import { AppException } from '../common/errors/app.exception';
+import { ErrorCode } from '../common/errors/error-codes';
 import { DRIZZLE } from '../database/drizzle.module';
 import type { User } from '../database/schema';
 import { UsersService } from '../users/users.service';
@@ -148,7 +149,7 @@ describe('AuthService', () => {
       expect(otpService.createAndSendOtp).toHaveBeenCalledWith(mockUser, 'email_verification');
     });
 
-    it('throws ConflictException if email already registered', async () => {
+    it('throws AppException(AUTH_EMAIL_ALREADY_EXISTS) if email already registered', async () => {
       usersService.findByEmail.mockResolvedValue(mockUser);
       await expect(
         service.register({
@@ -157,7 +158,7 @@ describe('AuthService', () => {
           lastName: 'User',
           password: 'password',
         }),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toMatchObject({ errorCode: ErrorCode.AUTH_EMAIL_ALREADY_EXISTS });
       expect(usersService.create).not.toHaveBeenCalled();
     });
   });
@@ -201,10 +202,10 @@ describe('AuthService', () => {
       expect(usersService.updateLastLogin).toHaveBeenCalledWith(mockUser.id);
     });
 
-    it('throws UnauthorizedException for inactive user', async () => {
-      await expect(service.login({ ...mockUser, isActive: false })).rejects.toThrow(
-        UnauthorizedException,
-      );
+    it('throws AppException(AUTH_ACCOUNT_DISABLED) for inactive user', async () => {
+      await expect(service.login({ ...mockUser, isActive: false })).rejects.toMatchObject({
+        errorCode: ErrorCode.AUTH_ACCOUNT_DISABLED,
+      });
       expect(tokenService.generateTokens).not.toHaveBeenCalled();
     });
 
@@ -226,20 +227,20 @@ describe('AuthService', () => {
       expect(result).toEqual(mockTokens);
     });
 
-    it('throws UnauthorizedException for invalid TOTP', async () => {
+    it('throws AppException(AUTH_TOTP_INVALID) for invalid TOTP', async () => {
       usersService.findById.mockResolvedValue({ ...mockUser, isTotpEnabled: true });
       totpService.verify.mockReturnValue(false);
 
-      await expect(service.loginWithTotp(mockUser.id, 'bad-token')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.loginWithTotp(mockUser.id, 'bad-token')).rejects.toMatchObject({
+        errorCode: ErrorCode.AUTH_TOTP_INVALID,
+      });
     });
 
-    it('throws UnauthorizedException when user not found', async () => {
+    it('throws AppException(AUTH_INVALID_CREDENTIALS) when user not found', async () => {
       usersService.findById.mockResolvedValue(null);
-      await expect(service.loginWithTotp('bad-id', '123456')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.loginWithTotp('bad-id', '123456')).rejects.toMatchObject({
+        errorCode: ErrorCode.AUTH_INVALID_CREDENTIALS,
+      });
     });
   });
 

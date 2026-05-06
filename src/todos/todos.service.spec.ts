@@ -1,5 +1,5 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { ErrorCode } from '../common/errors/error-codes';
 import { DRIZZLE } from '../database/drizzle.module';
 import type { Todo } from '../database/schema';
 import { TodosService } from './todos.service';
@@ -92,15 +92,19 @@ describe('TodosService', () => {
       expect(result).toEqual(mockTodo);
     });
 
-    it('throws NotFoundException when todo does not exist', async () => {
+    it('throws AppException(TODO_NOT_FOUND) when todo does not exist', async () => {
       mockDb.select.mockReturnValue(buildSelectChain([]));
-      await expect(service.findOne('bad-id', 'user-id-1')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('bad-id', 'user-id-1')).rejects.toMatchObject({
+        errorCode: ErrorCode.TODO_NOT_FOUND,
+      });
     });
 
-    it('throws ForbiddenException when todo belongs to different user', async () => {
+    it('throws AppException(TODO_FORBIDDEN) when todo belongs to different user', async () => {
       const otherUserTodo = { ...mockTodo, userId: 'other-user-id' };
       mockDb.select.mockReturnValue(buildSelectChain([otherUserTodo]));
-      await expect(service.findOne('todo-id-1', 'user-id-1')).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('todo-id-1', 'user-id-1')).rejects.toMatchObject({
+        errorCode: ErrorCode.TODO_FORBIDDEN,
+      });
     });
   });
 
@@ -176,11 +180,11 @@ describe('TodosService', () => {
       expect(result.completedAt).not.toBeNull();
     });
 
-    it('throws NotFoundException when todo not found', async () => {
+    it('throws AppException(TODO_NOT_FOUND) when todo not found', async () => {
       mockDb.select.mockReturnValue(buildSelectChain([]));
-      await expect(service.update('bad-id', 'user-id-1', { title: 'X' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.update('bad-id', 'user-id-1', { title: 'X' })).rejects.toMatchObject({
+        errorCode: ErrorCode.TODO_NOT_FOUND,
+      });
     });
   });
 
@@ -196,9 +200,11 @@ describe('TodosService', () => {
       );
     });
 
-    it('throws when todo does not exist', async () => {
+    it('throws AppException(TODO_NOT_FOUND) when todo does not exist', async () => {
       mockDb.select.mockReturnValue(buildSelectChain([]));
-      await expect(service.remove('bad-id', 'user-id-1')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('bad-id', 'user-id-1')).rejects.toMatchObject({
+        errorCode: ErrorCode.TODO_NOT_FOUND,
+      });
     });
   });
 

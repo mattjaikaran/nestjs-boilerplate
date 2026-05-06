@@ -1,5 +1,7 @@
-import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import type Redis from 'ioredis';
+import { AppException } from '../common/errors/app.exception';
+import { ErrorCode } from '../common/errors/error-codes';
 import { REDIS_CLIENT } from '../redis/redis.module';
 
 const MAX_ATTEMPTS = 5;
@@ -26,12 +28,14 @@ export class LockoutService {
       if (locked) {
         const ttl = await this.redis.ttl(this.lockKey(email));
         const minutes = Math.ceil(ttl / 60);
-        throw new UnauthorizedException(
+        throw new AppException(
+          ErrorCode.AUTH_ACCOUNT_LOCKED,
           `Account temporarily locked due to too many failed attempts. Try again in ${minutes} minute(s).`,
+          HttpStatus.UNAUTHORIZED,
         );
       }
     } catch (err) {
-      if (err instanceof UnauthorizedException) throw err;
+      if (err instanceof AppException) throw err;
       // Redis unavailable — fail open, log warning
       this.logger.warn('Redis unavailable for lockout check, proceeding without lockout');
     }

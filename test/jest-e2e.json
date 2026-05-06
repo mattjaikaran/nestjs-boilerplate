@@ -12,6 +12,7 @@
     "^@users/(.*)$": "<rootDir>/../src/users/$1",
     "^@todos/(.*)$": "<rootDir>/../src/todos/$1",
     "^@common/(.*)$": "<rootDir>/../src/common/$1",
-    "^@config/(.*)$": "<rootDir>/../src/config/$1"
+    "^@config/(.*)$": "<rootDir>/../src/config/$1",
+    "^@db/(.*)$": "<rootDir>/../src/database/$1"
   }
 }

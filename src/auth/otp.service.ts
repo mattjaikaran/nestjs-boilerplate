@@ -1,6 +1,8 @@
 import { randomBytes } from 'node:crypto';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { and, eq, gt } from 'drizzle-orm';
+import { AppException } from '../common/errors/app.exception';
+import { ErrorCode } from '../common/errors/error-codes';
 import { DRIZZLE, type DrizzleDB } from '../database/drizzle.module';
 import { type OTP, type User, otps } from '../database/schema';
 import { QueueService } from '../queue/queue.service';
@@ -58,7 +60,12 @@ export class OtpService {
       )
       .limit(1);
 
-    if (!otp) throw new BadRequestException('Invalid or expired token');
+    if (!otp)
+      throw new AppException(
+        ErrorCode.AUTH_OTP_INVALID,
+        'Invalid or expired token',
+        HttpStatus.BAD_REQUEST,
+      );
     return otp;
   }
 
