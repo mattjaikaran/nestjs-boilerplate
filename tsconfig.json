@@ -30,5 +30,6 @@
       "@adminjs/sql": ["node_modules/@adminjs/sql/lib"],
       "@adminjs/fastify": ["node_modules/@adminjs/fastify/types"]
     }
-  }
+  },
+  "exclude": ["node_modules", "dist", "generated", "examples", "scripts"]
 }

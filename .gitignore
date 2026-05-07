@@ -45,6 +45,9 @@ Thumbs.db
 # Drizzle
 drizzle/
 
+# Generated OpenAPI artifacts (run `bun run openapi:codegen` to regenerate)
+generated/
+
 # TypeScript
 *.tsbuildinfo
 
