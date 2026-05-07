@@ -13,6 +13,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { FastifyInstance } from 'fastify';
 import { setupAdmin } from './admin/admin.setup';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -148,9 +149,7 @@ async function bootstrap() {
         // Serve index.html for unknown routes so SPA client-side routing works
         decorateReply: false,
       });
-      const fastifyInstance = app.getHttpAdapter().getInstance() as import(
-        'fastify',
-      ).FastifyInstance;
+      const fastifyInstance = app.getHttpAdapter().getInstance() as FastifyInstance;
       fastifyInstance.setNotFoundHandler((_req, reply) => {
         reply.sendFile('index.html');
       });

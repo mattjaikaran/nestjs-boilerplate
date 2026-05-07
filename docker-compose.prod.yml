@@ -1,33 +1,90 @@
-version: '3.9'
+# Production stack — all services in one compose file
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml exec api node -e "require('child_process').execSync('bun run db:migrate', {stdio:'inherit'})"
+# OrbStack: works identically to Docker Desktop — no extra config needed.
 
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: nestjs_postgres_prod
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       POSTGRES_DB: ${DB_NAME:-nestjs_boilerplate}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres}']
-      interval: 10s
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-nestjs_boilerplate}']
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
+    # Do NOT expose postgres port in production — only internal network
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: nestjs_redis_prod
+    restart: unless-stopped
+    command: >
+      sh -c "
+        if [ -n '$$REDIS_PASSWORD' ]; then
+          redis-server --requirepass $$REDIS_PASSWORD --appendonly yes
+        else
+          redis-server --appendonly yes
+        fi
+      "
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - internal
 
   api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
     image: ${DOCKER_IMAGE:-nestjs-boilerplate:latest}
+    container_name: nestjs_api_prod
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - path: .env.production
+        required: false
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-nestjs_boilerplate}
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-nestjs_boilerplate}
+      REDIS_URL: redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379
+      PORT: ${PORT:-3000}
+      HOST: 0.0.0.0
     ports:
       - '${PORT:-3000}:3000'
-    command: sh -c "node dist/main"
+    # Migrations + start handled by docker/entrypoint.sh
+    networks:
+      - internal
+      - public
+
+networks:
+  internal:
+    driver: bridge
+  public:
+    driver: bridge
 
 volumes:
   postgres_data:
+  redis_data:

@@ -39,26 +39,47 @@ Copy `.env.example` to `.env.production` and fill in all values. Required:
 
 ## Docker Deployment
 
-### Build
+### OrbStack quickstart (recommended for local/dev)
+
+[OrbStack](https://orbstack.dev) is a fast Docker Desktop replacement for macOS with virtiofs volumes.
 
 ```bash
-docker build --target production -t nestjs-boilerplate:latest .
+# Install OrbStack (if needed)
+brew install orbstack
+
+# Dev stack (postgres + redis + api with hot-reload)
+make docker-up          # start
+make docker-logs        # tail logs
+make docker-down        # stop
+
+# Force rebuild after dependency changes
+make docker-rebuild
 ```
 
-### Run with docker-compose
+The dev compose file mounts source for hot-reload, runs `bun run db:migrate` on every start, then launches the dev server. No extra migration step needed.
+
+### Production with docker-compose
 
 ```bash
 # Copy and configure
 cp .env.example .env.production
+# Fill in all required secrets (DB_PASSWORD, JWT_SECRET, etc.)
 
-# Start all services (postgres + api)
-docker compose -f docker-compose.prod.yml up -d
+# Build then start all services (postgres + redis + api)
+make docker-prod-build
+make docker-prod-up
 
-# Run migrations
-docker compose -f docker-compose.prod.yml exec api bun run db:migrate
+# Migrations run automatically via docker/entrypoint.sh on every container start
 
-# Seed (optional)
-docker compose -f docker-compose.prod.yml exec api bun run db:seed
+# Seed (optional, first deploy only)
+docker compose -f docker-compose.prod.yml exec api node -e \
+  "require('child_process').execSync('bun run db:seed', {stdio:'inherit'})"
+```
+
+### Manual build
+
+```bash
+docker build --target production -t nestjs-boilerplate:latest .
 ```
 
 ---

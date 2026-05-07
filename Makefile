@@ -1,7 +1,8 @@
 .PHONY: help setup install dev build start stop lint lint-fix format check typecheck \
         test test-watch test-cov test-e2e \
         db-up db-down db-reset db-migrate db-generate db-push db-studio db-seed \
-        docker-up docker-down docker-logs docker-build docker-prod-up docker-prod-down \
+        docker-up docker-down docker-logs docker-build docker-rebuild \
+        docker-prod-up docker-prod-down docker-prod-build docker-prod-rebuild docker-prod-logs \
         clean generate deps-check ci
 
 # Colors
@@ -98,7 +99,7 @@ db-reset: ## Reset database schema (DESTRUCTIVE)
 	@read -p "Reset database? This will DROP everything. [y/N] " confirm && [ "$$confirm" = "y" ] && bun run db:reset || echo "Aborted"
 
 ##@ Docker
-docker-up: ## Start all dev containers
+docker-up: ## Start all dev containers (postgres + redis + api)
 	@docker compose up -d
 
 docker-down: ## Stop all dev containers
@@ -107,14 +108,27 @@ docker-down: ## Stop all dev containers
 docker-logs: ## Tail container logs
 	@docker compose logs -f
 
-docker-build: ## Build Docker image
+docker-build: ## Build dev Docker image
 	@docker compose build
+
+docker-rebuild: ## Force rebuild dev image (no cache) then start
+	@docker compose build --no-cache
+	@docker compose up -d
 
 docker-prod-up: ## Start production containers
 	@docker compose -f docker-compose.prod.yml up -d
 
 docker-prod-down: ## Stop production containers
 	@docker compose -f docker-compose.prod.yml down
+
+docker-prod-build: ## Build production Docker image
+	@docker compose -f docker-compose.prod.yml build
+
+docker-prod-rebuild: ## Force rebuild production image (no cache)
+	@docker compose -f docker-compose.prod.yml build --no-cache
+
+docker-prod-logs: ## Tail production container logs
+	@docker compose -f docker-compose.prod.yml logs -f
 
 ##@ Generators
 generate: ## Scaffold a new NestJS module (interactive)

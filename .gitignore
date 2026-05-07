@@ -51,8 +51,6 @@ generated/
 # TypeScript
 *.tsbuildinfo
 
-# Docker
-.dockerignore
 
 # Secrets (extra safety)
 *.pem
