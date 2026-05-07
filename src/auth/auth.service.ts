@@ -233,6 +233,22 @@ export class AuthService {
     await this.otpService.createAndSendOtp(user, 'magic_link');
   }
 
+  async loginWithPkceCode(
+    userId: string,
+    meta?: { ipAddress?: string; userAgent?: string },
+  ): Promise<AuthTokens> {
+    const user = await this.usersService.findById(userId);
+    if (!user || !user.isActive)
+      throw new AppException(
+        ErrorCode.AUTH_INVALID_CREDENTIALS,
+        'Unauthorized',
+        HttpStatus.UNAUTHORIZED,
+      );
+    await this.usersService.updateLastLogin(user.id);
+    this.eventEmitter.emit('user.login', new UserLoginEvent(user.id, meta?.ipAddress));
+    return this.tokenService.generateTokens(user, meta);
+  }
+
   async validateMagicLink(
     token: string,
     meta?: { ipAddress?: string; userAgent?: string },

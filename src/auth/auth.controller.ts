@@ -7,6 +7,8 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
+  Redirect,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -26,9 +28,11 @@ import type { User } from '../database/schema';
 import { AuthService } from './auth.service';
 import type { ForgotPasswordDto } from './dto/forgot-password.dto';
 import type { MagicLinkDto } from './dto/magic-link.dto';
+import { PkceAuthorizeDto, PkceTokenDto } from './dto/pkce.dto';
 import type { RegisterDto } from './dto/register.dto';
 import type { ResetPasswordDto } from './dto/reset-password.dto';
 import type { TotpVerifyDto } from './dto/totp.dto';
+import { PkceService } from './pkce.service';
 import { TokenService } from './token.service';
 import { TotpService } from './totp.service';
 import { WebAuthnService } from './webauthn.service';
@@ -41,6 +45,7 @@ export class AuthController {
     private tokenService: TokenService,
     private totpService: TotpService,
     private webauthnService: WebAuthnService,
+    private pkceService: PkceService,
   ) {}
 
   @Public()
@@ -179,6 +184,85 @@ export class AuthController {
   @ApiOperation({ summary: 'GitHub OAuth callback' })
   async githubCallback(@CurrentUser() user: User) {
     return this.authService.login(user);
+  }
+
+  // PKCE OAuth (SPA-safe OAuth flow)
+  @Public()
+  @Post('pkce/authorize')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Initiate PKCE OAuth flow — returns auth URL for SPA to redirect to',
+    description:
+      'Generate a code_verifier + code_challenge (S256) in the SPA, then call this endpoint to get a provider auth URL. Redirect the user to that URL. On return, exchange the one-time code via POST /auth/pkce/token.',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: { example: { authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?...' } },
+  })
+  async pkceAuthorize(@Body() dto: PkceAuthorizeDto) {
+    const state = this.pkceService.generateState();
+    await this.pkceService.storeState(state, {
+      codeChallenge: dto.codeChallenge,
+      redirectUri: dto.redirectUri,
+      provider: dto.provider,
+    });
+    const authUrl = this.pkceService.buildAuthUrl(dto.provider, state);
+    return { authUrl };
+  }
+
+  @Public()
+  @Get('google/pkce/callback')
+  @Redirect()
+  @ApiOperation({ summary: 'Google PKCE OAuth callback — redirects SPA with one-time code' })
+  async googlePkceCallback(@Query('code') code: string, @Query('state') state: string) {
+    const { codeChallenge, redirectUri } = await this.pkceService.resolveState(state);
+    const googleUser = await this.pkceService.exchangeGoogleCode(code);
+    const user = await this.authService.validateOAuthUser({
+      provider: 'google',
+      providerId: googleUser.sub,
+      email: googleUser.email,
+      firstName: googleUser.given_name,
+      lastName: googleUser.family_name ?? '',
+      avatarUrl: googleUser.picture,
+    });
+    const authCode = await this.pkceService.issueAuthCode(codeChallenge, user.id);
+    return { url: `${redirectUri}?code=${authCode}` };
+  }
+
+  @Public()
+  @Get('github/pkce/callback')
+  @Redirect()
+  @ApiOperation({ summary: 'GitHub PKCE OAuth callback — redirects SPA with one-time code' })
+  async githubPkceCallback(@Query('code') code: string, @Query('state') state: string) {
+    const { codeChallenge, redirectUri } = await this.pkceService.resolveState(state);
+    const githubUser = await this.pkceService.exchangeGitHubCode(code);
+    if (!githubUser.email) throw new Error('GitHub account has no verified public email');
+    const [firstName, ...rest] = (githubUser.name ?? githubUser.email).split(' ');
+    const user = await this.authService.validateOAuthUser({
+      provider: 'github',
+      providerId: String(githubUser.id),
+      email: githubUser.email,
+      firstName: firstName ?? '',
+      lastName: rest.join(' ') || '',
+      avatarUrl: githubUser.avatar_url,
+    });
+    const authCode = await this.pkceService.issueAuthCode(codeChallenge, user.id);
+    return { url: `${redirectUri}?code=${authCode}` };
+  }
+
+  @Public()
+  @Post('pkce/token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Exchange PKCE auth code + code_verifier for JWT tokens',
+  })
+  @ApiResponse({ status: 200, description: 'JWT tokens issued', type: AuthTokensResponseDto })
+  async pkceToken(@Body() dto: PkceTokenDto, @Req() req: FastifyRequest) {
+    const userId = await this.pkceService.consumeAuthCode(dto.code, dto.codeVerifier);
+    return this.authService.loginWithPkceCode(userId, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
   }
 
   // TOTP

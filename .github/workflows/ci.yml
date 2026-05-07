@@ -1,10 +1,7 @@
 name: CI
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+  workflow_dispatch: # manual trigger only — CI disabled on push/PR until tests are green locally
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

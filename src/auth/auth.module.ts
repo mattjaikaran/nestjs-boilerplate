@@ -10,6 +10,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LockoutService } from './lockout.service';
 import { OtpService } from './otp.service';
+import { PkceService } from './pkce.service';
 import { GitHubStrategy } from './strategies/github.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
@@ -43,6 +44,7 @@ import { WebAuthnService } from './webauthn.service';
     OtpService,
     TotpService,
     WebAuthnService,
+    PkceService,
     JwtStrategy,
     JwtRefreshStrategy,
     LocalStrategy,

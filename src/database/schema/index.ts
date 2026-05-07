@@ -6,4 +6,5 @@ export * from './api-keys.schema';
 export * from './audit.schema';
 export * from './payments.schema';
 export * from './webhooks.schema';
+export * from './organizations.schema';
 export * from './zod';

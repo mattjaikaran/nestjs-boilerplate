@@ -6,6 +6,7 @@ startTracing();
 import compress from '@fastify/compress';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
+import staticFiles from '@fastify/static';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -131,6 +132,30 @@ async function bootstrap() {
       cookieSecret: adminCookieSecret,
       port,
     });
+  }
+
+  // Serve compiled frontend (react-rsbuild or any SPA) from public/
+  // Set SERVE_FRONTEND=true + place build output in public/
+  const serveFrontend = configService.get<string>('SERVE_FRONTEND') === 'true';
+  if (serveFrontend) {
+    const path = await import('node:path');
+    const fs = await import('node:fs');
+    const publicDir = path.join(process.cwd(), 'public');
+    if (fs.existsSync(publicDir)) {
+      await app.register(staticFiles as never, {
+        root: publicDir,
+        prefix: '/',
+        // Serve index.html for unknown routes so SPA client-side routing works
+        decorateReply: false,
+      });
+      const fastifyInstance = app.getHttpAdapter().getInstance() as import(
+        'fastify',
+      ).FastifyInstance;
+      fastifyInstance.setNotFoundHandler((_req, reply) => {
+        reply.sendFile('index.html');
+      });
+      console.log(`Frontend served from: ${publicDir}`);
+    }
   }
 
   await app.listen(port, host);

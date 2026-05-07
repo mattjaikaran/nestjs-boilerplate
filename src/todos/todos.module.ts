@@ -7,13 +7,14 @@ import { ListTodosHandler } from './handlers/list-todos.handler';
 import { UpdateTodoHandler } from './handlers/update-todo.handler';
 import { TodosController } from './todos.controller';
 import { TodosService } from './todos.service';
+import { TodosV2Controller } from './v2/todos-v2.controller';
 
 const CommandHandlers = [CreateTodoHandler, UpdateTodoHandler, DeleteTodoHandler];
 const QueryHandlers = [GetTodoHandler, ListTodosHandler];
 
 @Module({
   imports: [CqrsModule],
-  controllers: [TodosController],
+  controllers: [TodosController, TodosV2Controller],
   providers: [TodosService, ...CommandHandlers, ...QueryHandlers],
   exports: [TodosService],
 })
