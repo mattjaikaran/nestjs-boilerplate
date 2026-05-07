@@ -72,6 +72,12 @@ export const envValidationSchema = Joi.object({
   WEBAUTHN_RP_ID: Joi.string().default('localhost'),
   WEBAUTHN_ORIGIN: Joi.string().uri().default('http://localhost:3000'),
 
+  // Sentry — optional
+  SENTRY_DSN: Joi.string().optional().allow(''),
+  APP_VERSION: Joi.string().optional().allow(''),
+  SENTRY_TRACES_SAMPLE_RATE: Joi.number().min(0).max(1).default(0.1),
+  SENTRY_PROFILES_SAMPLE_RATE: Joi.number().min(0).max(1).default(0.1),
+
   // Admin panel — omit to disable the admin panel entirely
   ADMIN_COOKIE_SECRET: Joi.string().min(32).optional().allow(''),
 }).options({ allowUnknown: true });

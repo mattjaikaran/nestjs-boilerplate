@@ -1,3 +1,5 @@
+// Sentry must be initialized before any other imports
+import './instrument';
 import { startTracing } from './tracing';
 startTracing();
 

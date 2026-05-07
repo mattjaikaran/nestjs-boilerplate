@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ErrorCode } from '../errors/error-codes';
 
@@ -43,6 +44,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         `${request.method} ${request.url} → ${status}`,
         exception instanceof Error ? exception.stack : undefined,
       );
+      Sentry.captureException(exception);
     }
 
     reply.status(status).send(errorResponse);
