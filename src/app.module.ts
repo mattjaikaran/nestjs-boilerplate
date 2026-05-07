@@ -33,6 +33,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 import { TodosModule } from './todos/todos.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { UsersModule } from './users/users.module';
     HealthModule,
     NotificationsModule,
     PaymentsModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [
