@@ -53,7 +53,7 @@
 ## Backlog
 
 ### Auth & Security
-- [ ] IP-based rate limit per endpoint
+- [x] IP-based rate limit per endpoint (IpThrottlerGuard — tracks by req.ip)
 - [ ] PKCE flow for OAuth (recommended for SPAs)
 
 ### Performance & Infrastructure
@@ -62,12 +62,12 @@
 - [ ] Response compression (fastify/compress wired, needs enabling)
 
 ### Developer Experience
-- [ ] Pre-commit hooks (husky + lint-staged)
-- [ ] Conventional commits enforcement (commitlint)
+- [x] Pre-commit hooks (husky + lint-staged)
+- [x] Conventional commits enforcement (commitlint)
 - [ ] API versioning v2 example
 - [ ] Database query logging in development
-- [ ] OpenAPI schema export to JSON file
-- [ ] Postman / Bruno collection export
+- [x] OpenAPI schema export to JSON file (bun run openapi:codegen)
+- [x] Postman / Bruno collection export (bruno/ directory)
 
 ### Testing
 - [ ] Contract testing with zod schema validation
@@ -76,22 +76,22 @@
 
 ### Modules to Add
 - [ ] Notifications module (in-app + email + push)
-- [ ] File upload module (S3 / R2 compatible)
+- [x] File upload module (S3 / R2 compatible via STORAGE_DRIVER=s3)
 - [ ] Billing module (Stripe) — B2B variant
 - [ ] Organizations / Teams module — B2B variant
 - [ ] Invitations module — B2B variant
-- [ ] Webhooks outbound module
+- [x] Webhooks outbound module (BullMQ delivery + HMAC signing)
 - [ ] Admin dashboard module
 
 ### Frontend Integration
 - [ ] Serve react-rsbuild build from NestJS static files
 - [ ] Configure CORS for frontend dev server
-- [ ] Generate TypeScript types from Drizzle schema (drizzle-zod)
-- [ ] Generate API client from OpenAPI spec (openapi-typescript)
+- [x] Generate TypeScript types from Drizzle schema (drizzle-zod — src/database/schema/zod.ts)
+- [x] Generate API client from OpenAPI spec (openapi-typescript — bun run openapi:codegen)
 - [ ] BFF (Backend for Frontend) endpoints if needed
 
 ### Observability
 - [ ] Structured JSON logging (pino via Fastify is already included)
-- [ ] Error tracking (Sentry integration)
+- [x] Error tracking (Sentry integration — SENTRY_DSN env var)
 - [ ] Uptime monitoring setup
 - [ ] Database query performance tracking
