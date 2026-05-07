@@ -26,7 +26,9 @@
       "@todos/*": ["src/todos/*"],
       "@common/*": ["src/common/*"],
       "@config/*": ["src/config/*"],
-      "@db/*": ["src/database/*"]
+      "@db/*": ["src/database/*"],
+      "@adminjs/sql": ["node_modules/@adminjs/sql/lib"],
+      "@adminjs/fastify": ["node_modules/@adminjs/fastify/types"]
     }
   }
 }

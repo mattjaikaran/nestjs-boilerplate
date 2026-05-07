@@ -63,4 +63,7 @@ export const envValidationSchema = Joi.object({
   WEBAUTHN_RP_NAME: Joi.string().default('NestJS Boilerplate'),
   WEBAUTHN_RP_ID: Joi.string().default('localhost'),
   WEBAUTHN_ORIGIN: Joi.string().uri().default('http://localhost:3000'),
+
+  // Admin panel — omit to disable the admin panel entirely
+  ADMIN_COOKIE_SECRET: Joi.string().min(32).optional().allow(''),
 }).options({ allowUnknown: true });

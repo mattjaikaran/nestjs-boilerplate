@@ -10,6 +10,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { setupAdmin } from './admin/admin.setup';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -34,9 +35,9 @@ async function bootstrap() {
   // WebSocket adapter (Socket.io)
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  // Security headers
+  // Security headers — CSP disabled globally; AdminJS uses inline scripts/styles
   await app.register(helmet as never, {
-    contentSecurityPolicy: isProd,
+    contentSecurityPolicy: false,
   });
 
   // Response compression (brotli → gzip → deflate)
@@ -114,6 +115,21 @@ async function bootstrap() {
 
   const port = configService.get('PORT', 3000);
   const host = configService.get('HOST', '0.0.0.0');
+
+  // Admin panel (AdminJS + @adminjs/fastify + @adminjs/sql)
+  const adminCookieSecret = configService.get<string>('ADMIN_COOKIE_SECRET');
+  const databaseUrl = configService.get<string>('DATABASE_URL', '');
+  const appName = configService.get<string>('APP_NAME', 'NestJS Boilerplate');
+  if (adminCookieSecret) {
+    const dbName = new URL(databaseUrl).pathname.slice(1);
+    await setupAdmin(fastify, {
+      databaseUrl,
+      databaseName: dbName,
+      appName,
+      cookieSecret: adminCookieSecret,
+      port,
+    });
+  }
 
   await app.listen(port, host);
   console.log(`Application running on: http://${host}:${port}/api/v1`);
