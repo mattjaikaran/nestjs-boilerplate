@@ -54,7 +54,7 @@
 
 ### Auth & Security
 - [x] IP-based rate limit per endpoint (IpThrottlerGuard — tracks by req.ip)
-- [ ] PKCE flow for OAuth (recommended for SPAs)
+- [x] PKCE flow for OAuth (pkce/authorize → pkce/token, S256 challenge, Redis-backed state)
 
 ### Performance & Infrastructure
 - [ ] OpenTelemetry tracing setup
@@ -64,27 +64,27 @@
 ### Developer Experience
 - [x] Pre-commit hooks (husky + lint-staged)
 - [x] Conventional commits enforcement (commitlint)
-- [ ] API versioning v2 example
-- [ ] Database query logging in development
+- [x] API versioning v2 example (TodosV2Controller at /api/v2/todos with cursor pagination)
+- [x] Database query logging in development (drizzle logger: true when NODE_ENV=development)
 - [x] OpenAPI schema export to JSON file (bun run openapi:codegen)
 - [x] Postman / Bruno collection export (bruno/ directory)
 
 ### Testing
 - [ ] Contract testing with zod schema validation
-- [ ] Load testing setup (k6 or autocannon)
+- [x] Load testing setup (k6 scripts in load-tests/ — auth + todos, smoke/load/spike)
 - [ ] Mutation testing setup
 
 ### Modules to Add
 - [ ] Notifications module (in-app + email + push)
 - [x] File upload module (S3 / R2 compatible via STORAGE_DRIVER=s3)
-- [ ] Billing module (Stripe) — B2B variant
-- [ ] Organizations / Teams module — B2B variant
-- [ ] Invitations module — B2B variant
+- [x] Billing module (Stripe) — B2B variant (org_subscriptions table with seats, wired to Stripe)
+- [x] Organizations / Teams module — B2B variant (CRUD, roles, soft delete)
+- [x] Invitations module — B2B variant (email invite, 7-day token, accept/revoke)
 - [x] Webhooks outbound module (BullMQ delivery + HMAC signing)
 - [ ] Admin dashboard module
 
 ### Frontend Integration
-- [ ] Serve react-rsbuild build from NestJS static files
+- [x] Serve react-rsbuild build from NestJS static files (@fastify/static, SERVE_FRONTEND=true)
 - [ ] Configure CORS for frontend dev server
 - [x] Generate TypeScript types from Drizzle schema (drizzle-zod — src/database/schema/zod.ts)
 - [x] Generate API client from OpenAPI spec (openapi-typescript — bun run openapi:codegen)
