@@ -1,0 +1,19 @@
+meta {
+  name: Get Webhook Deliveries
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/webhooks/:id/deliveries
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+params:path {
+  id: your-webhook-uuid
+}

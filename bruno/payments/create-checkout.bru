@@ -1,0 +1,22 @@
+meta {
+  name: Create Stripe Checkout Session
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/payments/checkout
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "priceId": "price_your_stripe_price_id",
+    "quantity": 1
+  }
+}

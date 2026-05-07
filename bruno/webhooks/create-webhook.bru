@@ -1,0 +1,23 @@
+meta {
+  name: Create Webhook Endpoint
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/webhooks
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "url": "https://webhook.site/your-unique-id",
+    "events": ["user.registered", "todo.created"],
+    "description": "My test webhook"
+  }
+}

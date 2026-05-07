@@ -1,0 +1,26 @@
+meta {
+  name: Update Todo
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}/todos/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+params:path {
+  id: your-todo-uuid
+}
+
+body:json {
+  {
+    "title": "Updated title",
+    "completed": true
+  }
+}

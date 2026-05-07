@@ -1,0 +1,19 @@
+meta {
+  name: Delete Todo
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}/todos/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+params:path {
+  id: your-todo-uuid
+}

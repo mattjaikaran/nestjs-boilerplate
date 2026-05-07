@@ -1,0 +1,23 @@
+meta {
+  name: Create Todo
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/todos
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "title": "My first todo",
+    "description": "Optional description",
+    "priority": "medium"
+  }
+}
