@@ -37,6 +37,8 @@
   "dependencies": {
     "@adminjs/fastify": "^4.2.0",
     "@adminjs/sql": "^2.2.6",
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
     "@bull-board/api": "^7.0.0",
     "@bull-board/fastify": "^7.0.0",
     "@bull-board/nestjs": "^7.0.0",

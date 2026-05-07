@@ -19,6 +19,7 @@ import databaseConfig from './config/database.config';
 import { envValidationSchema } from './config/env.validation';
 import jwtConfig from './config/jwt.config';
 import redisConfig from './config/redis.config';
+import storageConfig from './config/storage.config';
 import stripeConfig from './config/stripe.config';
 import { DrizzleModule } from './database/drizzle.module';
 import { HealthModule } from './health/health.module';
@@ -37,7 +38,15 @@ import { UsersModule } from './users/users.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
-      load: [appConfig, databaseConfig, jwtConfig, authConfig, stripeConfig, redisConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        jwtConfig,
+        authConfig,
+        stripeConfig,
+        redisConfig,
+        storageConfig,
+      ],
       validationSchema: envValidationSchema,
       validationOptions: { abortEarly: false },
       expandVariables: true,

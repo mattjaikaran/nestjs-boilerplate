@@ -37,6 +37,14 @@ export const envValidationSchema = Joi.object({
   // File uploads
   UPLOAD_DIR: Joi.string().default('uploads'),
   UPLOAD_MAX_SIZE_MB: Joi.number().integer().min(1).default(10),
+  STORAGE_DRIVER: Joi.string().valid('local', 's3').default('local'),
+  S3_BUCKET: Joi.string().optional().allow(''),
+  S3_REGION: Joi.string().optional().default('auto'),
+  S3_ENDPOINT: Joi.string().optional().allow(''),
+  S3_ACCESS_KEY_ID: Joi.string().optional().allow(''),
+  S3_SECRET_ACCESS_KEY: Joi.string().optional().allow(''),
+  S3_PUBLIC_URL: Joi.string().optional().allow(''),
+  S3_FORCE_PATH_STYLE: Joi.boolean().default(false),
 
   // Stripe — optional (all or nothing)
   STRIPE_SECRET_KEY: Joi.string().optional().allow(''),
