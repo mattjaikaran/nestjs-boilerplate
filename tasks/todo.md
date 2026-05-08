@@ -72,7 +72,7 @@
 ### Testing
 - [x] Contract testing with zod schema validation (src/common/contracts/ — 17 tests covering API envelope, todos, auth)
 - [x] Load testing setup (k6 scripts in load-tests/ — auth + todos, smoke/load/spike)
-- [ ] Mutation testing setup
+- [x] Mutation testing setup (Stryker + @stryker-mutator/jest-runner — 100% kill rate on contract schemas, bun run test:mutation)
 
 ### Modules to Add
 - [x] Notifications module (in-app via WebSocket + email via BullMQ — NotificationsService.notifyUser() accepts email option)

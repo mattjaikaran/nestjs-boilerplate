@@ -31,6 +31,9 @@ coverage/
 # Testing
 .jest-cache/
 
+# Mutation testing reports
+reports/
+
 # Editor
 .vscode/
 .idea/

@@ -1,5 +1,10 @@
 import { apiErrorSchema, apiSuccessSchema } from './api-response.contract';
-import { authTokensContract, registerResponseSchema, userPublicContract } from './auth.contract';
+import {
+  authTokensContract,
+  refreshResponseSchema,
+  registerResponseSchema,
+  userPublicContract,
+} from './auth.contract';
 import {
   todoContract,
   todoListContract,
@@ -60,7 +65,7 @@ describe('API response envelope contracts', () => {
     expect(result.success).toBe(false);
   });
 
-  it('validates an error envelope', () => {
+  it('validates an error envelope with all required fields', () => {
     const payload = {
       statusCode: 404,
       errorCode: 'NOT_FOUND',
@@ -71,6 +76,50 @@ describe('API response envelope contracts', () => {
     };
     expect(() => apiErrorSchema.parse(payload)).not.toThrow();
   });
+
+  it('rejects an error envelope missing statusCode', () => {
+    const result = apiErrorSchema.safeParse({
+      errorCode: 'ERR',
+      timestamp: new Date().toISOString(),
+      path: '/',
+      method: 'GET',
+      message: 'x',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an error envelope missing errorCode', () => {
+    const result = apiErrorSchema.safeParse({
+      statusCode: 500,
+      timestamp: new Date().toISOString(),
+      path: '/',
+      method: 'GET',
+      message: 'x',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an error envelope missing path', () => {
+    const result = apiErrorSchema.safeParse({
+      statusCode: 500,
+      errorCode: 'ERR',
+      timestamp: new Date().toISOString(),
+      method: 'GET',
+      message: 'x',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an error envelope missing method', () => {
+    const result = apiErrorSchema.safeParse({
+      statusCode: 500,
+      errorCode: 'ERR',
+      timestamp: new Date().toISOString(),
+      path: '/',
+      message: 'x',
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 // ─── Todo contracts ───────────────────────────────────────────────────────────
@@ -80,35 +129,67 @@ describe('Todo contracts', () => {
     expect(() => todoContract.parse(mockTodo)).not.toThrow();
   });
 
+  it.each(['pending', 'in_progress', 'completed', 'cancelled'] as const)(
+    'accepts status "%s"',
+    (status) => {
+      expect(() => todoContract.parse({ ...mockTodo, status })).not.toThrow();
+    },
+  );
+
   it('rejects a todo with invalid status', () => {
-    const result = todoContract.safeParse({ ...mockTodo, status: 'done' });
-    expect(result.success).toBe(false);
+    expect(todoContract.safeParse({ ...mockTodo, status: 'done' }).success).toBe(false);
+  });
+
+  it.each(['low', 'medium', 'high'] as const)('accepts priority "%s"', (priority) => {
+    expect(() => todoContract.parse({ ...mockTodo, priority })).not.toThrow();
   });
 
   it('rejects a todo with invalid priority', () => {
-    const result = todoContract.safeParse({ ...mockTodo, priority: 'urgent' });
-    expect(result.success).toBe(false);
+    expect(todoContract.safeParse({ ...mockTodo, priority: 'urgent' }).success).toBe(false);
   });
 
   it('rejects a todo with empty title', () => {
-    const result = todoContract.safeParse({ ...mockTodo, title: '' });
-    expect(result.success).toBe(false);
+    expect(todoContract.safeParse({ ...mockTodo, title: '' }).success).toBe(false);
   });
 
   it('rejects a todo with non-UUID id', () => {
-    const result = todoContract.safeParse({ ...mockTodo, id: 'not-a-uuid' });
+    expect(todoContract.safeParse({ ...mockTodo, id: 'not-a-uuid' }).success).toBe(false);
+  });
+
+  it('validates a todo list with all required fields', () => {
+    const list = { items: [mockTodo], total: 1, page: 1, limit: 20, totalPages: 1 };
+    expect(() => todoListContract.parse(list)).not.toThrow();
+  });
+
+  it('rejects a todo list missing items', () => {
+    const result = todoListContract.safeParse({ total: 1, page: 1, limit: 20, totalPages: 1 });
     expect(result.success).toBe(false);
   });
 
-  it('validates a todo list envelope', () => {
-    const list = {
-      items: [mockTodo],
-      total: 1,
+  it('rejects a todo list missing total', () => {
+    const result = todoListContract.safeParse({ items: [], page: 1, limit: 20, totalPages: 1 });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a todo list missing page', () => {
+    const result = todoListContract.safeParse({ items: [], total: 0, limit: 20, totalPages: 0 });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a todo list missing limit', () => {
+    const result = todoListContract.safeParse({ items: [], total: 0, page: 1, totalPages: 0 });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a todo list with negative total', () => {
+    const result = todoListContract.safeParse({
+      items: [],
+      total: -1,
       page: 1,
       limit: 20,
-      totalPages: 1,
-    };
-    expect(() => todoListContract.parse(list)).not.toThrow();
+      totalPages: 0,
+    });
+    expect(result.success).toBe(false);
   });
 
   it('validates a wrapped todo API response', () => {
@@ -124,18 +205,18 @@ describe('Todo contracts', () => {
 // ─── Auth contracts ───────────────────────────────────────────────────────────
 
 describe('Auth contracts', () => {
-  it('validates a user public shape', () => {
-    expect(() => userPublicContract.parse(mockUser)).not.toThrow();
+  it.each(['admin', 'user', 'moderator'] as const)('accepts role "%s"', (role) => {
+    expect(() => userPublicContract.parse({ ...mockUser, role })).not.toThrow();
   });
 
   it('rejects a user with invalid role', () => {
-    const result = userPublicContract.safeParse({ ...mockUser, role: 'superadmin' });
-    expect(result.success).toBe(false);
+    expect(userPublicContract.safeParse({ ...mockUser, role: 'superadmin' }).success).toBe(false);
   });
 
   it('rejects a user with invalid email', () => {
-    const result = userPublicContract.safeParse({ ...mockUser, email: 'not-an-email' });
-    expect(result.success).toBe(false);
+    expect(userPublicContract.safeParse({ ...mockUser, email: 'not-an-email' }).success).toBe(
+      false,
+    );
   });
 
   it('validates auth tokens', () => {
@@ -143,11 +224,30 @@ describe('Auth contracts', () => {
   });
 
   it('rejects auth tokens with empty accessToken', () => {
-    const result = authTokensContract.safeParse({ ...mockAuthTokens, accessToken: '' });
-    expect(result.success).toBe(false);
+    expect(authTokensContract.safeParse({ ...mockAuthTokens, accessToken: '' }).success).toBe(
+      false,
+    );
+  });
+
+  it('rejects auth tokens with empty refreshToken', () => {
+    expect(authTokensContract.safeParse({ ...mockAuthTokens, refreshToken: '' }).success).toBe(
+      false,
+    );
   });
 
   it('validates a register response envelope', () => {
     expect(() => registerResponseSchema.parse(wrap(mockAuthTokens))).not.toThrow();
+  });
+
+  it('validates a refresh response envelope', () => {
+    expect(() => refreshResponseSchema.parse(wrap({ accessToken: 'new-token' }))).not.toThrow();
+  });
+
+  it('rejects a refresh response with empty accessToken', () => {
+    expect(refreshResponseSchema.safeParse(wrap({ accessToken: '' })).success).toBe(false);
+  });
+
+  it('rejects a refresh response missing accessToken', () => {
+    expect(refreshResponseSchema.safeParse(wrap({})).success).toBe(false);
   });
 });
