@@ -57,9 +57,9 @@
 - [x] PKCE flow for OAuth (pkce/authorize → pkce/token, S256 challenge, Redis-backed state)
 
 ### Performance & Infrastructure
-- [ ] OpenTelemetry tracing setup
-- [ ] Request ID middleware (trace header passthrough)
-- [ ] Response compression (fastify/compress wired, needs enabling)
+- [x] OpenTelemetry tracing setup (tracing.ts — OTEL_ENABLED env var, OTLP HTTP exporter)
+- [x] Request ID middleware (x-request-id / x-correlation-id passthrough via RequestContextInterceptor)
+- [x] Response compression (fastify/compress with global:true — brotli → gzip → deflate)
 
 ### Developer Experience
 - [x] Pre-commit hooks (husky + lint-staged)
@@ -70,28 +70,28 @@
 - [x] Postman / Bruno collection export (bruno/ directory)
 
 ### Testing
-- [ ] Contract testing with zod schema validation
+- [x] Contract testing with zod schema validation (src/common/contracts/ — 17 tests covering API envelope, todos, auth)
 - [x] Load testing setup (k6 scripts in load-tests/ — auth + todos, smoke/load/spike)
 - [ ] Mutation testing setup
 
 ### Modules to Add
-- [ ] Notifications module (in-app + email + push)
+- [x] Notifications module (in-app via WebSocket + email via BullMQ — NotificationsService.notifyUser() accepts email option)
 - [x] File upload module (S3 / R2 compatible via STORAGE_DRIVER=s3)
 - [x] Billing module (Stripe) — B2B variant (org_subscriptions table with seats, wired to Stripe)
 - [x] Organizations / Teams module — B2B variant (CRUD, roles, soft delete)
 - [x] Invitations module — B2B variant (email invite, 7-day token, accept/revoke)
 - [x] Webhooks outbound module (BullMQ delivery + HMAC signing)
-- [ ] Admin dashboard module
+- [x] Admin dashboard module (AdminJS + @adminjs/fastify + @adminjs/sql — ADMIN_COOKIE_SECRET env var)
 
 ### Frontend Integration
 - [x] Serve react-rsbuild build from NestJS static files (@fastify/static, SERVE_FRONTEND=true)
-- [ ] Configure CORS for frontend dev server
+- [x] Configure CORS for frontend dev server (CORS_ORIGINS env var, comma-separated origins)
 - [x] Generate TypeScript types from Drizzle schema (drizzle-zod — src/database/schema/zod.ts)
 - [x] Generate API client from OpenAPI spec (openapi-typescript — bun run openapi:codegen)
 - [ ] BFF (Backend for Frontend) endpoints if needed
 
 ### Observability
-- [ ] Structured JSON logging (pino via Fastify is already included)
+- [x] Structured JSON logging (Fastify/pino — LOG_LEVEL + LOG_FORMAT=json env vars; pino-pretty in dev)
 - [x] Error tracking (Sentry integration — SENTRY_DSN env var)
 - [ ] Uptime monitoring setup
 - [ ] Database query performance tracking

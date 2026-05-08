@@ -28,4 +28,14 @@ export class QueueService {
     await this.emailQueue.add(EMAIL_JOBS.SEND_GENERIC, { to, subject, html });
     this.logger.debug(`Queued generic email to ${to}: ${subject}`);
   }
+
+  async sendNotificationEmail(
+    to: string,
+    title: string,
+    message: string,
+    actionUrl?: string,
+  ): Promise<void> {
+    await this.emailQueue.add(EMAIL_JOBS.SEND_NOTIFICATION, { to, title, message, actionUrl });
+    this.logger.debug(`Queued notification email to ${to}: ${title}`);
+  }
 }

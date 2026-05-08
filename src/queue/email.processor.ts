@@ -27,6 +27,13 @@ export interface SendGenericJobData {
   html: string;
 }
 
+export interface SendNotificationJobData {
+  to: string;
+  title: string;
+  message: string;
+  actionUrl?: string;
+}
+
 @Processor(EMAIL_QUEUE)
 export class EmailProcessor extends WorkerHost {
   private readonly logger = new Logger(EmailProcessor.name);
@@ -55,6 +62,11 @@ export class EmailProcessor extends WorkerHost {
       case EMAIL_JOBS.SEND_GENERIC: {
         const { to, subject, html } = job.data as SendGenericJobData;
         await this.emailService.send({ to, subject, html });
+        break;
+      }
+      case EMAIL_JOBS.SEND_NOTIFICATION: {
+        const { to, title, message, actionUrl } = job.data as SendNotificationJobData;
+        await this.emailService.sendNotification(to, title, message, actionUrl);
         break;
       }
       default:

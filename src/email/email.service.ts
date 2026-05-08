@@ -91,4 +91,23 @@ export class EmailService {
       `,
     });
   }
+
+  async sendNotification(
+    to: string,
+    title: string,
+    message: string,
+    actionUrl?: string,
+  ): Promise<void> {
+    await this.send({
+      to,
+      subject: `${title} — ${this.appName}`,
+      html: `
+        <h2>${title}</h2>
+        <p>${message}</p>
+        ${actionUrl ? `<p><a href="${actionUrl}">View details</a></p>` : ''}
+        <hr />
+        <p style="color:#999;font-size:12px;">You received this because you have notifications enabled. Visit ${this.appUrl}/settings to manage preferences.</p>
+      `,
+    });
+  }
 }

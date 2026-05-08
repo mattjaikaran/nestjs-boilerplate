@@ -22,10 +22,26 @@ import { RequestContextInterceptor } from './common/interceptors/request-context
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 
 async function bootstrap() {
+  const isTest = process.env.NODE_ENV === 'test';
+  const isPinoJson = process.env.LOG_FORMAT === 'json' || process.env.NODE_ENV === 'production';
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      logger: process.env.NODE_ENV !== 'test',
+      logger: isTest
+        ? false
+        : {
+            level:
+              process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+            ...(isPinoJson
+              ? {}
+              : {
+                  transport: {
+                    target: 'pino-pretty',
+                    options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname' },
+                  },
+                }),
+          },
       trustProxy: true,
     }),
   );

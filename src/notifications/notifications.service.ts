@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { QueueService } from '../queue/queue.service';
 import { NotificationsGateway } from './notifications.gateway';
 
 export interface NotificationPayload {
@@ -9,22 +10,53 @@ export interface NotificationPayload {
   timestamp?: string;
 }
 
+export interface SendNotificationOptions {
+  /** Send in-app notification via WebSocket */
+  realtime?: boolean;
+  /** Send an email notification via BullMQ */
+  email?: string;
+  /** Optional deep-link for the email CTA */
+  actionUrl?: string;
+}
+
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly gateway: NotificationsGateway) {}
+  constructor(
+    private readonly gateway: NotificationsGateway,
+    @Optional() private readonly queueService?: QueueService,
+  ) {}
 
-  notifyUser(userId: string, payload: NotificationPayload) {
-    this.gateway.sendToUser(userId, 'notification', {
-      ...payload,
-      timestamp: payload.timestamp ?? new Date().toISOString(),
-    });
+  async notifyUser(
+    userId: string,
+    payload: NotificationPayload,
+    opts: SendNotificationOptions = { realtime: true },
+  ) {
+    const full = { ...payload, timestamp: payload.timestamp ?? new Date().toISOString() };
+
+    if (opts.realtime !== false) {
+      this.gateway.sendToUser(userId, 'notification', full);
+    }
+
+    if (opts.email && this.queueService) {
+      await this.queueService.sendNotificationEmail(
+        opts.email,
+        payload.title,
+        payload.message,
+        opts.actionUrl,
+      );
+    }
   }
 
-  notifyRoom(room: string, payload: NotificationPayload) {
-    this.gateway.sendToRoom(room, 'notification', {
-      ...payload,
-      timestamp: payload.timestamp ?? new Date().toISOString(),
-    });
+  async notifyRoom(
+    room: string,
+    payload: NotificationPayload,
+    opts: SendNotificationOptions = { realtime: true },
+  ) {
+    const full = { ...payload, timestamp: payload.timestamp ?? new Date().toISOString() };
+
+    if (opts.realtime !== false) {
+      this.gateway.sendToRoom(room, 'notification', full);
+    }
   }
 
   broadcast(payload: NotificationPayload) {
