@@ -170,11 +170,21 @@ src/
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | POST | / | JWT | Create todo (via CommandBus) |
-| GET | / | JWT | List with pagination (via QueryBus) |
-| GET | /stats | JWT | Aggregated stats |
+| GET | / | JWT | List with filtering and pagination (via QueryBus) |
+| GET | /stats | JWT | Aggregated stats (total, completed, pending, overdue, byPriority) |
 | GET | /:id | JWT | Get by ID (via QueryBus) |
+| POST | /:id/toggle | JWT | Toggle completion status |
+| PATCH | /:id/toggle | JWT | Toggle completion status (react-vite alias) |
 | PATCH | /:id | JWT | Update (via CommandBus) |
 | DELETE | /:id | JWT | Soft delete (via CommandBus) |
+| PATCH | /bulk | JWT | Bulk update by IDs |
+| POST | /bulk-delete | JWT | Bulk soft delete by IDs |
+| DELETE | /bulk | JWT | Bulk soft delete by IDs (react-vite alias) |
+| POST | /archive-completed | JWT | Archive (soft delete) all completed todos |
+
+Query params for `GET /`: `search`, `priority` (low/medium/high), `completed` (bool), `overdue` (bool), `due_today` (bool), `page`, `limit`, `sortBy`, `sortOrder`.
+
+Response shape includes both `isCompleted` (DB field) and `completed` (frontend-friendly alias).
 
 ### Payments `/api/v1/payments`
 | Method | Path | Auth | Description |

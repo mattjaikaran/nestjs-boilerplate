@@ -1,8 +1,8 @@
-import type { PaginationDto } from '../../common/dto/pagination.dto';
+import type { TodoQueryDto } from '../dto/todo-query.dto';
 
 export class ListTodosQuery {
   constructor(
     public readonly userId: string,
-    public readonly pagination: PaginationDto,
+    public readonly pagination: TodoQueryDto,
   ) {}
 }

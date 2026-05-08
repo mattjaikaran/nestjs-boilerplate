@@ -15,4 +15,10 @@ export class UpdateTodoDto extends PartialType(CreateTodoDto) {
   @IsOptional()
   @IsBoolean()
   isCompleted?: boolean;
+
+  // Frontend-friendly alias for isCompleted
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  completed?: boolean;
 }

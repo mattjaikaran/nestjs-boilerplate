@@ -21,6 +21,8 @@ const mockTodo: Todo = {
   deletedAt: null,
 };
 
+const mockTodoResponse = { ...mockTodo, completed: false };
+
 function buildSelectChain(result: unknown[]) {
   const chain = {
     from: jest.fn(),
@@ -28,12 +30,14 @@ function buildSelectChain(result: unknown[]) {
     limit: jest.fn(),
     offset: jest.fn(),
     orderBy: jest.fn(),
+    groupBy: jest.fn(),
   };
   chain.from.mockReturnValue(chain);
   chain.where.mockReturnValue(chain);
   chain.orderBy.mockReturnValue(chain);
   chain.offset.mockResolvedValue(result);
   chain.limit.mockResolvedValue(result);
+  chain.groupBy.mockResolvedValue(result);
   return chain;
 }
 
@@ -80,7 +84,7 @@ describe('TodosService', () => {
         priority: 'medium',
       });
 
-      expect(result).toEqual(mockTodo);
+      expect(result).toEqual(mockTodoResponse);
       expect(mockDb.insert).toHaveBeenCalled();
     });
   });
@@ -89,7 +93,7 @@ describe('TodosService', () => {
     it('returns todo for correct user', async () => {
       mockDb.select.mockReturnValue(buildSelectChain([mockTodo]));
       const result = await service.findOne('todo-id-1', 'user-id-1');
-      expect(result).toEqual(mockTodo);
+      expect(result).toEqual(mockTodoResponse);
     });
 
     it('throws AppException(TODO_NOT_FOUND) when todo does not exist', async () => {
@@ -137,7 +141,7 @@ describe('TodosService', () => {
 
       const result = await service.findAll('user-id-1', { page: 1, limit: 20 });
 
-      expect(result.data).toEqual([mockTodo]);
+      expect(result.data).toEqual([mockTodoResponse]);
       expect(result.meta.total).toBe(1);
       expect(result.meta.page).toBe(1);
       expect(result.meta.totalPages).toBe(1);
@@ -180,6 +184,21 @@ describe('TodosService', () => {
       expect(result.completedAt).not.toBeNull();
     });
 
+    it('sets completedAt when marking as completed via completed alias', async () => {
+      const completedTodo = {
+        ...mockTodo,
+        isCompleted: true,
+        completedAt: new Date(),
+        status: 'completed' as const,
+      };
+      mockDb.select.mockReturnValue(buildSelectChain([mockTodo]));
+      mockDb.update.mockReturnValue(buildUpdateChain([completedTodo]));
+
+      const result = await service.update('todo-id-1', 'user-id-1', { completed: true });
+      expect(result.isCompleted).toBe(true);
+      expect(result.completed).toBe(true);
+    });
+
     it('throws AppException(TODO_NOT_FOUND) when todo not found', async () => {
       mockDb.select.mockReturnValue(buildSelectChain([]));
       await expect(service.update('bad-id', 'user-id-1', { title: 'X' })).rejects.toMatchObject({
@@ -208,18 +227,53 @@ describe('TodosService', () => {
     });
   });
 
+  describe('toggle', () => {
+    it('flips isCompleted from false to true', async () => {
+      const toggled = {
+        ...mockTodo,
+        isCompleted: true,
+        completedAt: new Date(),
+        status: 'completed' as const,
+      };
+      mockDb.select.mockReturnValue(buildSelectChain([mockTodo]));
+      mockDb.update.mockReturnValue(buildUpdateChain([toggled]));
+
+      const result = await service.toggle('todo-id-1', 'user-id-1');
+      expect(result.isCompleted).toBe(true);
+      expect(result.completed).toBe(true);
+    });
+  });
+
   describe('stats', () => {
-    it('returns aggregated counts', async () => {
-      const statsResult = [{ total: 10, completed: 4, pending: 5, inProgress: 1 }];
+    it('returns aggregated counts with byPriority', async () => {
+      const statsResult = [{ total: 10, completed: 4, pending: 5, inProgress: 1, overdue: 2 }];
+      const priorityResult = [
+        { priority: 'low' as const, count: 3 },
+        { priority: 'medium' as const, count: 5 },
+        { priority: 'high' as const, count: 2 },
+      ];
+
       const statsChain = {
         from: jest.fn(),
         where: jest.fn().mockResolvedValue(statsResult),
       };
       statsChain.from.mockReturnValue(statsChain);
-      mockDb.select.mockReturnValue(statsChain);
+
+      const priorityChain = {
+        from: jest.fn(),
+        where: jest.fn(),
+        groupBy: jest.fn().mockResolvedValue(priorityResult),
+      };
+      priorityChain.from.mockReturnValue(priorityChain);
+      priorityChain.where.mockReturnValue(priorityChain);
+
+      mockDb.select.mockReturnValueOnce(statsChain).mockReturnValueOnce(priorityChain);
 
       const result = await service.stats('user-id-1');
-      expect(result).toEqual(statsResult[0]);
+      expect(result.total).toBe(10);
+      expect(result.completed).toBe(4);
+      expect(result.overdue).toBe(2);
+      expect(result.byPriority).toEqual({ low: 3, medium: 5, high: 2 });
     });
   });
 });

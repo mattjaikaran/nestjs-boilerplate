@@ -4,6 +4,41 @@ Covers every cross-cutting feature beyond auth. For auth specifics see [auth.md]
 
 ---
 
+## Todos API
+
+The todo endpoints are designed to be compatible with the companion frontend boilerplates (`react-vite-boilerplate`, `react-rsbuild-boilerplate`). Both use the same API contract.
+
+### Response shape
+
+All todo responses include both the DB field and a frontend-friendly alias:
+```json
+{ "isCompleted": true, "completed": true, ... }
+```
+
+### Filtering (`GET /api/v1/todos`)
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `search` | string | Title substring match |
+| `priority` | `low` \| `medium` \| `high` | Filter by priority |
+| `completed` | boolean | Filter by completion status |
+| `overdue` | boolean | Todos with past `dueDate` and not completed |
+| `due_today` | boolean | Todos with `dueDate` within today |
+| `page` / `limit` | number | Pagination |
+| `sortBy` / `sortOrder` | string / ASC\|DESC | Ordering |
+
+### Bulk operations
+
+- `PATCH /bulk` — accepts `{ ids, ...updates }` (rsbuild) or `{ ids, updates }` (react-vite)
+- `POST /bulk-delete` or `DELETE /bulk` — soft-delete multiple todos
+- `POST /archive-completed` — soft-delete all completed todos
+
+### Toggle endpoints
+
+Both `POST /:id/toggle` (rsbuild) and `PATCH /:id/toggle` (react-vite) are supported.
+
+---
+
 ## CQRS
 
 Enabled via `@nestjs/cqrs`. The `TodosModule` is the canonical example.
